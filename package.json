@@ -1,0 +1,24 @@
+{
+  "name": "pixi-application",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "webpack --mode production --config webpack.config.js",
+    "serve": "webpack serve --config webpack.config.js",
+    "lint": "eslint src"
+  },
+  "author": "Alexandre Bodelot <alexandre.bodelot@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "pixi.js": "^5.3.7",
+    "webpack": "^5.13.0",
+    "webpack-cli": "^4.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.18.0",
+    "eslint-config-airbnb": "^18.2.1",
+    "eslint-import-resolver-webpack": "^0.13.0",
+    "eslint-plugin-import": "^2.22.1",
+    "webpack-dev-server": "^3.11.2"
+  }
+}

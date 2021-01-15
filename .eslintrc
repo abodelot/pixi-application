@@ -1,0 +1,21 @@
+{
+  "extends": ["eslint:recommended", "airbnb-base"],
+  "env": {
+    "node": true,
+    "es6": true,
+    "browser": true
+  },
+  "rules": {
+    "no-console": "off",
+    "no-underscore-dangle": ["error", {
+       "allowAfterThis": true
+    }]
+  },
+  "settings": {
+    "import/resolver": {
+      "webpack": {
+        "config": "webpack.config.js"
+      },
+    }
+  }
+}
