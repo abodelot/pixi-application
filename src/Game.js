@@ -7,13 +7,6 @@ class Game {
   }
 
   /**
-   * Add a container on stage
-   */
-  add(container) {
-    this._app.stage.addChild(container);
-  }
-
-  /**
    * Load assets in the 'assets' directory
    * @param assets: array of paths
    * @param callback: on complete callback function
