@@ -1,5 +1,7 @@
 # PIXI Application
 
+![workflow](https://github.com/abodelot/jquery.json-viewer/actions/workflows/node.js.yml/badge.svg)
+
 ## Setup
 
 Install dependencies:
