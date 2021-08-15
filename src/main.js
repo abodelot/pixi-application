@@ -10,12 +10,9 @@ import Style from '@src/ui/Style';
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 PIXI.settings.ROUND_PIXELS = true;
 
-const screenWidth = 480;
-const screenHeight = 360;
-
 const app = new PIXI.Application({
-  width: screenWidth,
-  height: screenHeight,
+  width: window.innerWidth,
+  height: window.innerHeight,
   resolution: window.devicePixelRatio,
   backgroundColor: 0xb8b8b8,
 });
