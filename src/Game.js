@@ -1,9 +1,31 @@
 import * as PIXI from 'pixi.js';
 
-class Game {
-  initialize(app) {
-    this._app = app;
-    this._loader = new PIXI.Loader();
+export class Game {
+  #app;
+  #currentScene;
+  #loader;
+
+  constructor(app) {
+    this.#app = app;
+    this.#currentScene = null;
+    this.#loader = new PIXI.Loader();
+  }
+
+  get app() {
+    return this.#app;
+  }
+
+  /**
+   * Create a new instance of given scene, and display it
+   */
+  selectScene(SceneClass) {
+    if (this.#currentScene != null) {
+      // Remove display container from previous scene
+      this.#app.stage.removeChild(this.#currentScene.container);
+    }
+
+    this.#currentScene = new SceneClass(this);
+    this.#app.stage.addChild(this.#currentScene.container);
   }
 
   /**
@@ -13,9 +35,9 @@ class Game {
    */
   loadAssets(assets, callback) {
     assets.forEach((path) => {
-      this._loader.add(path, `assets/${path}`);
+      this.#loader.add(path, `assets/${path}`);
     });
-    this._loader.load(callback);
+    this.#loader.load(callback);
   }
 
   /**
@@ -24,13 +46,10 @@ class Game {
    * @return PIXI.Texture
    */
   getTexture(name) {
-    const resource = this._loader.resources[name];
+    const resource = this.#loader.resources[name];
     if (resource === undefined) {
       throw Error(`Resource ${name} is not loaded.`);
     }
     return resource.texture;
   }
 }
-
-// Export as a singleton instance
-export default new Game();

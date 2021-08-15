@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 
-class Style {
+class StyleDef {
   constructor() {
     this.padding = 4;
     this.margin = 4;
@@ -55,4 +55,4 @@ class Style {
 }
 
 // Export as a singleton instance
-export default new Style();
+export const Style = new StyleDef();

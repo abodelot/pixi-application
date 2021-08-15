@@ -1,24 +1,27 @@
 import * as PIXI from 'pixi.js';
 
-import Style from './Style';
+import { Style } from './Style';
 
-export default class ContextMenuItem extends PIXI.Container {
+export class ContextMenuItem extends PIXI.Container {
+  #text;
+  #bg;
+
   constructor(label) {
     super();
 
-    this._bg = new PIXI.Sprite(PIXI.Texture.WHITE);
-    this._bg.tint = 0xffffff;
-    this._bg.height = Style.baseHeight;
-    this._bg.width = 120;
+    this.#bg = new PIXI.Sprite(PIXI.Texture.WHITE);
+    this.#bg.tint = 0xffffff;
+    this.#bg.height = Style.baseHeight;
+    this.#bg.width = 120;
 
-    this._text = new PIXI.Text(label, {
+    this.#text = new PIXI.Text(label, {
       fontFamily: Style.fontFamily,
       fontSize: Style.fontSize,
       fill: Style.textColor,
     });
-    this._text.position.set(Style.padding, Style.padding);
+    this.#text.position.set(Style.padding, Style.padding);
 
-    this.addChild(this._bg, this._text);
+    this.addChild(this.#bg, this.#text);
 
     this.interactive = true;
     this.mouseout = this.defaultStyle;
@@ -26,12 +29,12 @@ export default class ContextMenuItem extends PIXI.Container {
   }
 
   defaultStyle() {
-    this._bg.tint = 0xffffff;
-    this._text.style.fill = Style.textColor;
+    this.#bg.tint = 0xffffff;
+    this.#text.style.fill = Style.textColor;
   }
 
   hoverStyle() {
-    this._bg.tint = Style.bgColorSelected;
-    this._text.style.fill = Style.textColorSelected;
+    this.#bg.tint = Style.bgColorSelected;
+    this.#text.style.fill = Style.textColorSelected;
   }
 }

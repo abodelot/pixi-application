@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
 
-import Game from '@src/Game';
-import ContextMenu from '@src/ui/ContextMenu';
-import MessageBox from '@src/ui/MessageBox';
-import Layout from '@src/ui/Layout';
-import Style from '@src/ui/Style';
+import { Game } from '@src/Game';
+import { ContextMenu } from '@src/ui/ContextMenu';
+import { Style } from '@src/ui/Style';
+
+import { MainMenuScene } from '@src/scenes/MainMenuScene';
 
 // Disable smoothing for pixel-perfect rendering
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
@@ -17,43 +17,26 @@ const app = new PIXI.Application({
   backgroundColor: 0xb8b8b8,
 });
 
-Game.initialize(app);
+const game = new Game(app);
 const assets = [
   'box9.png',
   'box-shadow.png',
 ];
-Game.loadAssets(assets, () => {
+game.loadAssets(assets, () => {
   console.log('assets loaded');
 
   Style.setTextures({
-    button: Game.getTexture('box9.png'),
-    shadow: Game.getTexture('box-shadow.png'),
+    button: game.getTexture('box9.png'),
+    shadow: game.getTexture('box-shadow.png'),
   });
 
-  // Create application menu
-  const menu = new Layout();
-  menu.addOption('Play', () => {
-    const box = new MessageBox('Hello, world');
-    box.position.set(30, 30);
-    box.onOk(() => {
-      console.log('ok');
-    });
-    box.onCancel(() => {
-      app.stage.removeChild(box);
-    });
-    app.stage.addChild(box);
-  });
-  menu.addOption('Options').enable(false);
-  menu.addOption('Quit');
-
-  menu.position.set(10, 10);
-  app.stage.addChild(menu);
+  game.selectScene(MainMenuScene);
 });
 
 window.onload = () => {
   document.body.appendChild(app.view);
 
-  // Disable right click on canvas
+  // Disable native right click on canvas
   app.view.oncontextmenu = (e) => {
     e.preventDefault();
     e.stopPropagation();

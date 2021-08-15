@@ -1,9 +1,9 @@
 import * as PIXI from 'pixi.js';
 
-import Button from './Button';
-import Style from './Style';
+import { Button } from './Button';
+import { Style } from './Style';
 
-export default class Layout extends PIXI.Container {
+export class Layout extends PIXI.Container {
   addOption(name, callback) {
     // Stack items on Y axis
     let y = 0;
