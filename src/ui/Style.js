@@ -6,7 +6,7 @@ class StyleDef {
     this.margin = 4;
     this.bgColor = 0xb8b8b8;
     this.bgColorSelected = 0x000080;
-    this.fontFamily = 'DejaVu Sans';
+    this.fontFamily = 'Sans-Serif';
     this.fontSize = 12;
     this.textColor = 0x111111;
     this.textColorDisabled = 0x666666;

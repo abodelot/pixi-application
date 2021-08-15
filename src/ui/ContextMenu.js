@@ -10,7 +10,6 @@ export class ContextMenu extends PIXI.Container {
   constructor() {
     super();
     this.#itemContainer = new PIXI.Container();
-
     this.#shadow = Style.createShadow(0, 0);
 
     this.addChild(this.#shadow, this.#itemContainer);
@@ -36,7 +35,12 @@ export class ContextMenu extends PIXI.Container {
     this.#shadow.height = this.#itemContainer.height + Style.shadowRadius * 2;
   }
 
+  /**
+   * Remove context menu from parent
+   */
   close() {
-    this.parent.removeChild(this);
+    if (this.parent) {
+      this.parent.removeChild(this);
+    }
   }
 }

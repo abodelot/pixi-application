@@ -7,6 +7,9 @@
   },
   "rules": {
     "no-console": "off",
+    "no-mixed-operators": "off",
+    "no-param-reassign": "off",
+    "no-plusplus": "off",
     "lines-between-class-members": ["error", "always", {
       "exceptAfterSingleLine": true
     }],

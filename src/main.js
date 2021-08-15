@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 
-import { Game } from '@src/Game';
+import { game } from '@src/core/Game';
 import { ContextMenu } from '@src/ui/ContextMenu';
 import { Style } from '@src/ui/Style';
 
@@ -17,10 +17,12 @@ const app = new PIXI.Application({
   backgroundColor: 0xb8b8b8,
 });
 
-const game = new Game(app);
+game.initialize(app);
 const assets = [
   'box9.png',
   'box-shadow.png',
+  'tileset.png',
+  'cursor.png',
 ];
 game.loadAssets(assets, () => {
   console.log('assets loaded');
@@ -36,12 +38,16 @@ game.loadAssets(assets, () => {
 window.onload = () => {
   document.body.appendChild(app.view);
 
-  // Disable native right click on canvas
+  let contextMenu = null;
+  // Replace native right click with custom menu
   app.view.oncontextmenu = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const contextMenu = new ContextMenu();
+    if (contextMenu) {
+      contextMenu.close();
+    }
+    contextMenu = new ContextMenu();
     contextMenu.addItem('New');
     contextMenu.addItem('Edit');
     contextMenu.addItem('Save and quit');

@@ -1,14 +1,22 @@
 import * as PIXI from 'pixi.js';
 
-export class Game {
+/**
+ * Application-wide class, used as a singleton. Handle the application state:
+ * - Wrapper around PIXI application
+ * - Resource manager: Game.loadAssets, Game.getTexture
+ * - Scene system: Game.selectScene
+ * - Event bus: Game.on, Game.emit
+ */
+class Game {
   #app;
   #currentScene;
   #loader;
 
-  constructor(app) {
+  initialize(app) {
     this.#app = app;
     this.#currentScene = null;
     this.#loader = new PIXI.Loader();
+    this.listeners = {};
   }
 
   get app() {
@@ -52,4 +60,28 @@ export class Game {
     }
     return resource.texture;
   }
+
+  /**
+   * Trigger an event
+   */
+  emit(eventName, argument) {
+    console.log(`Event ${eventName} -> ${argument}`);
+    if (this.listeners[eventName]) {
+      this.listeners[eventName].forEach((callback) => {
+        callback(argument);
+      });
+    }
+  }
+
+  /**
+   * Register an event listener
+   */
+  on(eventName, callback) {
+    if (this.listeners[eventName] === undefined) {
+      this.listeners[eventName] = [];
+    }
+    this.listeners[eventName].push(callback);
+  }
 }
+
+export const game = new Game();
