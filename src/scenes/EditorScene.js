@@ -1,3 +1,5 @@
+import * as PIXI from 'pixi.js';
+
 import { Tileset } from '@src/core/Tileset';
 import { Tilemap } from '@src/core/Tilemap';
 import { TileSelector } from '@src/core/TileSelector';
@@ -5,6 +7,8 @@ import { Toolbar } from '@src/core/Toolbar';
 
 import { ContextMenu } from '@src/ui/ContextMenu';
 import { ScrollContainer } from '@src/ui/ScrollContainer';
+
+import { TabContainer } from '@src/ui/TabContainer';
 
 import { BaseScene } from './BaseScene';
 import { MainMenuScene } from './MainMenuScene';
@@ -15,19 +19,25 @@ export class EditorScene extends BaseScene {
   constructor(game) {
     super(game);
 
+    const toolbarHeight = 200;
+    const sidebarWidth = 260;
+
+    const tabs = new TabContainer(sidebarWidth, window.innerHeight - toolbarHeight);
+    this.container.addChild(tabs);
+
     const tileset = new Tileset(game.getTexture('tileset.png'), 32, 16);
     const tileSelector = new TileSelector(tileset);
-    this.container.addChild(tileSelector);
-
-    const toolbarHeight = 200;
+    tabs.addTab('Terrain', tileSelector);
+    tabs.addTab('Items', new PIXI.Text('Content of tab 2'));
+    tabs.addTab('Units', new PIXI.Text('Content of tab 3'));
 
     const viewPort = {
-      width: window.innerWidth - 256,
+      width: window.innerWidth - sidebarWidth,
       height: window.innerHeight - toolbarHeight,
     };
 
     const scrollContainer = new ScrollContainer(viewPort.width, viewPort.height);
-    scrollContainer.x = 256;
+    scrollContainer.x = sidebarWidth;
 
     this.container.addChild(scrollContainer);
     this.#tilemap = new Tilemap(tileset);

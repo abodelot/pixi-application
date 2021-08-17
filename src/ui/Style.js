@@ -12,6 +12,7 @@ class StyleDef {
     this.textColorDisabled = 0x666666;
     this.textColorSelected = 0xffffff;
     this.buttonWidth = 100;
+    this.buttonHeight = 24;
     this.boxPadding = 12;
     this.shadowRadius = 12;
     this.baseHeight = 22;
@@ -23,20 +24,21 @@ class StyleDef {
    * @param textures: dict<string, PIXI.Texture>
    */
   setTextures(textures) {
-    const buttonTexture = textures.button.baseTexture;
+    const tex = textures.button.baseTexture;
 
-    this.textures.normal = new PIXI.Texture(
-      buttonTexture, new PIXI.Rectangle(0, 0, 12, 12),
-    );
-    this.textures.hover = new PIXI.Texture(
-      buttonTexture, new PIXI.Rectangle(0, 12, 12, 12),
-    );
-    this.textures.focus = new PIXI.Texture(
-      buttonTexture, new PIXI.Rectangle(0, 24, 12, 12),
-    );
-    this.textures.panel = new PIXI.Texture(
-      buttonTexture, new PIXI.Rectangle(0, 36, 12, 12),
-    );
+    this.textures.button = {
+      normal: new PIXI.Texture(tex, new PIXI.Rectangle(0, 0, 12, 12)),
+      hover: new PIXI.Texture(tex, new PIXI.Rectangle(0, 12, 12, 12)),
+      focus: new PIXI.Texture(tex, new PIXI.Rectangle(0, 24, 12, 12)),
+    };
+    this.textures.tab = {
+      normal: new PIXI.Texture(tex, new PIXI.Rectangle(12, 0, 12, 12)),
+      hover: new PIXI.Texture(tex, new PIXI.Rectangle(12, 12, 12, 12)),
+      focus: new PIXI.Texture(tex, new PIXI.Rectangle(12, 24, 12, 12)),
+      panel: new PIXI.Texture(tex, new PIXI.Rectangle(12, 36, 12, 12)),
+    };
+
+    this.textures.panel = new PIXI.Texture(tex, new PIXI.Rectangle(0, 36, 12, 12));
     this.textures.shadow = textures.shadow;
   }
 

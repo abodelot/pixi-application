@@ -15,30 +15,30 @@ export class Button extends PIXI.Container {
       fill: Style.textCcolor,
     });
 
-    this.#text.position.x = (Style.buttonWidth - this.#text.width) / 2;
-    this.#text.position.y = Style.padding;
-
-    this.#bg = new PIXI.NineSlicePlane(Style.textures.normal, 3, 3, 3, 3);
+    this.#bg = new PIXI.NineSlicePlane(Style.textures.button.normal, 3, 3, 3, 3);
     this.#bg.width = Style.buttonWidth;
-    this.#bg.height = this.#text.height + Style.padding * 2;
+    this.#bg.height = Style.buttonHeight;
+
+    // Text alignment
+    this.#text.x = (Style.buttonWidth - this.#text.width) / 2;
+    this.#text.y = (Style.buttonHeight - this.#text.height) / 2;
 
     this.addChild(this.#bg, this.#text);
-
     this.enable(true);
   }
 
   defaultStyle() {
-    this.#bg.texture = Style.textures.normal;
+    this.#bg.texture = Style.textures.button.normal;
     this.#text.position.y = Style.padding;
   }
 
   hoverStyle() {
-    this.#bg.texture = Style.textures.hover;
+    this.#bg.texture = Style.textures.button.hover;
     this.#text.position.y = Style.padding;
   }
 
   focusStyle() {
-    this.#bg.texture = Style.textures.focus;
+    this.#bg.texture = Style.textures.button.focus;
     this.#text.position.y = Style.padding + 1;
   }
 
