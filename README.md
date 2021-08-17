@@ -15,3 +15,13 @@ Start development server:
 Run eslint:
 
     yarn run lint
+
+## Deployment
+
+Build for production:
+
+    yarn run build
+
+Serve `dist` directory:
+
+    node server.js
