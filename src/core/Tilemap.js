@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { game } from './Game';
+import { Tileset } from './Tileset';
 
 export class Tilemap extends PIXI.Container {
   #background;
@@ -144,14 +145,14 @@ export class Tilemap extends PIXI.Container {
       }
 
       if (this.#isMousePressed) {
-        this.updateHoveredTile();
+        this.updateHoveredTile(this.#selectedTileId);
       }
     }
   }
 
   onMouseDown() {
     this.#isMousePressed = true;
-    this.updateHoveredTile();
+    this.updateHoveredTile(this.#selectedTileId);
   }
 
   onMouseUp() {
@@ -163,18 +164,81 @@ export class Tilemap extends PIXI.Container {
     this.height = this.pixelHeight * ratio;
   }
 
-  /**
-   * Update the texture of the tile under cursor with selectedTileId
-   */
-  updateHoveredTile() {
-    if (this.#hoveredTile
-        && this.#hoveredTile.i >= 0 && this.#hoveredTile.i < this.mapWidth
-        && this.#hoveredTile.j >= 0 && this.#hoveredTile.j < this.mapHeight) {
-      const index = this.#hoveredTile.j * this.mapWidth + this.#hoveredTile.i;
+  setTileAt(i, j, tileId) {
+    if (i >= 0 && i < this.mapWidth && j >= 0 && j < this.mapHeight) {
+      const index = j * this.mapWidth + i;
       const sprite = this.#tiles[index];
-      sprite.texture = this.#tileset.getTileTexture(this.#selectedTileId);
-      sprite.tileId = this.#selectedTileId;
+      sprite.texture = this.#tileset.getTileTexture(tileId);
+      sprite.tileId = tileId;
       this.saveToLocalStorage();
+    }
+  }
+
+  getTileAt(i, j) {
+    if (i >= 0 && i < this.mapWidth && j >= 0 && j < this.mapHeight) {
+      return this.#tiles[j * this.mapWidth + i].tileId;
+    }
+    return null;
+  }
+
+  /**
+   * Put a Road tile at given coords
+   */
+  setRoadAt(i, j) {
+    // Check the 4 surrounding tiles: Up, Down, Left, Right
+    const neighbors = [
+      this.isRoad(i, j - 1),
+      this.isRoad(i, j + 1),
+      this.isRoad(i - 1, j),
+      this.isRoad(i + 1, j),
+    ];
+
+    // [True, False, False, True] => '1001'
+    const key = neighbors.map((flag) => (flag ? 1 : 0)).join('');
+
+    // Select tile connecting with neighbor tiles
+    const tileId = Tileset.RoadNeighbors[key];
+    this.setTileAt(i, j, tileId);
+  }
+
+  /**
+   * Check if tile at coords is a road
+   */
+  isRoad(i, j) {
+    const tileId = this.getTileAt(i, j);
+    return tileId !== null && Tileset.isRoad(tileId);
+  }
+
+  /**
+   * Update the texture of the tile under cursor
+   * @param tileId: tile id in tileset for texture source
+   */
+  updateHoveredTile(tileId) {
+    if (this.#hoveredTile) {
+      const { i, j } = this.#hoveredTile;
+      const previousTileId = this.getTileAt(i, j);
+      if (Tileset.isRoad(tileId)) {
+        // When tileId is a road, use smart selection instead of tileId argument
+        this.setRoadAt(i, j);
+      } else {
+        this.setTileAt(i, j, tileId);
+      }
+
+      // When adding or removing a road tile: check road neighbors for update
+      if (Tileset.isRoad(tileId) || Tileset.isRoad(previousTileId)) {
+        if (this.isRoad(i - 1, j)) {
+          this.setRoadAt(i - 1, j);
+        }
+        if (this.isRoad(i + 1, j)) {
+          this.setRoadAt(i + 1, j);
+        }
+        if (this.isRoad(i, j - 1)) {
+          this.setRoadAt(i, j - 1);
+        }
+        if (this.isRoad(i, j + 1)) {
+          this.setRoadAt(i, j + 1);
+        }
+      }
     }
   }
 }

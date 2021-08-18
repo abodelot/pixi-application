@@ -1,6 +1,47 @@
 import * as PIXI from 'pixi.js';
 
 export class Tileset {
+  static Roads = {
+    HORIZONTAL: 40,
+    VERTICAL: 41,
+    CROSSROADS: 43,
+    NONE: 42,
+    TURN_UP_LEFT: 49,
+    TURN_DOWN_RIGHT: 48,
+    TURN_UP_RIGHT: 51,
+    TURN_DOWN_LEFT: 50,
+    T_DOWN: 56,
+    T_RIGHT: 57,
+    T_UP: 58,
+    T_LEFT: 59,
+    END_UP: 67,
+    END_DOWN: 65,
+    END_LEFT: 66,
+    END_RIGHT: 64,
+  };
+
+  // Key: 4 booleans, encoded as 0|1 string. Each bool value indicates if the tile
+  // connects to another road tile, for each direction: Up, Down, Left, Right
+  // Value: The road tile ID
+  static RoadNeighbors = {
+    '0000': Tileset.Roads.NONE,
+    '1000': Tileset.Roads.END_DOWN,
+    '0100': Tileset.Roads.END_UP,
+    '1100': Tileset.Roads.VERTICAL,
+    '0010': Tileset.Roads.END_RIGHT,
+    '0001': Tileset.Roads.END_LEFT,
+    '0011': Tileset.Roads.HORIZONTAL,
+    '1010': Tileset.Roads.TURN_UP_LEFT,
+    '1001': Tileset.Roads.TURN_UP_RIGHT,
+    '0110': Tileset.Roads.TURN_DOWN_LEFT,
+    '0101': Tileset.Roads.TURN_DOWN_RIGHT,
+    '1011': Tileset.Roads.T_UP,
+    '0111': Tileset.Roads.T_DOWN,
+    '1110': Tileset.Roads.T_LEFT,
+    '1101': Tileset.Roads.T_RIGHT,
+    '1111': Tileset.Roads.CROSSROADS,
+  };
+
   #texture;
   #tileWidth;
   #tileHeight;
@@ -44,5 +85,9 @@ export class Tileset {
    */
   coordsToTileId(i, j) {
     return j * this.#cols + i;
+  }
+
+  static isRoad(tileId) {
+    return Object.values(Tileset.Roads).includes(tileId);
   }
 }
