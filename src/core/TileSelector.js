@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { Tileset } from './Tileset';
 import { game } from './Game';
 
 export class TileSelector extends PIXI.Container {
@@ -56,6 +57,11 @@ export class TileSelector extends PIXI.Container {
 
     const tileId = this.#tileset.coordsToTileId(i, j);
     this.#label.text = `Selected tile: ${tileId}`;
+    if (Tileset.isWater(tileId)) {
+      this.#label.text += ' (Water)';
+    } else if (Tileset.isRoad(tileId)) {
+      this.#label.text += ' (Road)';
+    }
     this.#selectedTile.position = this.#cursorTile.position;
 
     game.emit('tile_id_selected', tileId);

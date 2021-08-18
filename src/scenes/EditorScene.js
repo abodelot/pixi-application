@@ -24,5 +24,7 @@ export class EditorScene extends BaseScene {
       defaultMap.fill(2); // Water
       tilemap.load(defaultMap, width, height);
     }
+    // Zoom 2x
+    tilemap.setScale(2);
   }
 }

@@ -65,8 +65,6 @@ export class Tilemap extends PIXI.Container {
     this.#background.width = this.pixelWidth;
     this.#background.height = this.pixelHeight;
 
-    this.setScale(2);
-
     const cursorTexture = game.getTexture('cursor.png');
     cursorTexture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
     this.#cursor = new PIXI.Sprite(cursorTexture);
@@ -185,19 +183,33 @@ export class Tilemap extends PIXI.Container {
    * Put a Road tile at given coords
    */
   setRoadAt(i, j) {
+    this.setSmartTileAt(i, j, this.isRoad.bind(this), Tileset.RoadNeighbors);
+  }
+
+  setWaterAt(i, j) {
+    this.setSmartTileAt(i, j, this.isWater.bind(this), Tileset.WaterNeighbors);
+  }
+
+  /**
+   * Put a tile connecting with the 4 surrounding tiles
+   * @param i, j: tile cords
+   * @param checkTypeFn: callback function that check if tile matches the expected type
+   * @param neighborAtlas: list of neighbor tile ids, defined in Tileset
+   */
+  setSmartTileAt(i, j, checkTypeFn, neighborAtlas) {
     // Check the 4 surrounding tiles: Up, Down, Left, Right
     const neighbors = [
-      this.isRoad(i, j - 1),
-      this.isRoad(i, j + 1),
-      this.isRoad(i - 1, j),
-      this.isRoad(i + 1, j),
+      checkTypeFn(i, j - 1),
+      checkTypeFn(i, j + 1),
+      checkTypeFn(i - 1, j),
+      checkTypeFn(i + 1, j),
     ];
 
     // [True, False, False, True] => '1001'
     const key = neighbors.map((flag) => (flag ? 1 : 0)).join('');
 
     // Select tile connecting with neighbor tiles
-    const tileId = Tileset.RoadNeighbors[key];
+    const tileId = neighborAtlas[key];
     this.setTileAt(i, j, tileId);
   }
 
@@ -210,6 +222,15 @@ export class Tilemap extends PIXI.Container {
   }
 
   /**
+   * Check if tile at coords is water
+   */
+  isWater(i, j) {
+    const tileId = this.getTileAt(i, j);
+    // Water is supposed to continue over map limits: null is considered as water
+    return tileId == null || Tileset.isWater(tileId);
+  }
+
+  /**
    * Update the texture of the tile under cursor
    * @param tileId: tile id in tileset for texture source
    */
@@ -217,27 +238,27 @@ export class Tilemap extends PIXI.Container {
     if (this.#hoveredTile) {
       const { i, j } = this.#hoveredTile;
       const previousTileId = this.getTileAt(i, j);
+      // If tileId is a special type, use smart selection instead of tileId argument
       if (Tileset.isRoad(tileId)) {
-        // When tileId is a road, use smart selection instead of tileId argument
         this.setRoadAt(i, j);
+      } else if (Tileset.isWater(tileId)) {
+        this.setWaterAt(i, j);
       } else {
         this.setTileAt(i, j, tileId);
       }
 
-      // When adding or removing a road tile: check road neighbors for update
+      // When adding or removing a special tile: check same-type neighbors for update
       if (Tileset.isRoad(tileId) || Tileset.isRoad(previousTileId)) {
-        if (this.isRoad(i - 1, j)) {
-          this.setRoadAt(i - 1, j);
-        }
-        if (this.isRoad(i + 1, j)) {
-          this.setRoadAt(i + 1, j);
-        }
-        if (this.isRoad(i, j - 1)) {
-          this.setRoadAt(i, j - 1);
-        }
-        if (this.isRoad(i, j + 1)) {
-          this.setRoadAt(i, j + 1);
-        }
+        if (this.isRoad(i - 1, j)) this.setRoadAt(i - 1, j);
+        if (this.isRoad(i + 1, j)) this.setRoadAt(i + 1, j);
+        if (this.isRoad(i, j - 1)) this.setRoadAt(i, j - 1);
+        if (this.isRoad(i, j + 1)) this.setRoadAt(i, j + 1);
+      }
+      if (Tileset.isWater(tileId) || Tileset.isWater(previousTileId)) {
+        if (this.isWater(i - 1, j)) this.setWaterAt(i - 1, j);
+        if (this.isWater(i + 1, j)) this.setWaterAt(i + 1, j);
+        if (this.isWater(i, j - 1)) this.setWaterAt(i, j - 1);
+        if (this.isWater(i, j + 1)) this.setWaterAt(i, j + 1);
       }
     }
   }
