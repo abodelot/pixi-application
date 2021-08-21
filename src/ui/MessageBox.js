@@ -46,6 +46,7 @@ export class MessageBox extends PIXI.Container {
     this.#header.width = totalWidth - 4;
 
     this.#buttonOk = new Button('OK');
+    this.#buttonOk.enable(false);
     y += this.#text.height + Style.margin;
     this.#buttonOk.position.set(
       totalWidth - Style.buttonWidth - Style.boxPadding,
@@ -53,6 +54,7 @@ export class MessageBox extends PIXI.Container {
     );
 
     this.#buttonCancel = new Button('Cancel');
+    this.#buttonCancel.enable(false);
     this.#buttonCancel.position.set(
       totalWidth - Style.buttonWidth * 2 - Style.margin - Style.boxPadding,
       y,
@@ -73,9 +75,11 @@ export class MessageBox extends PIXI.Container {
 
   onOk(callback) {
     this.#buttonOk.click = callback;
+    this.#buttonOk.enable(true);
   }
 
   onCancel(callback) {
     this.#buttonCancel.click = callback;
+    this.#buttonCancel.enable(true);
   }
 }

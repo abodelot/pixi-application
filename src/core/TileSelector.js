@@ -31,8 +31,8 @@ export class TileSelector extends PIXI.Container {
     this.sprite.addChild(this.#selectedTile);
 
     this.sprite.interactive = true;
-    this.sprite.on('mousemove', this.onMouseMove.bind(this));
-    this.sprite.on('mousedown', this.onMouseDown.bind(this));
+    this.sprite.on('pointermove', this.onMouseMove.bind(this));
+    this.sprite.on('pointerdown', this.onMouseDown.bind(this));
   }
 
   onMouseMove(event) {

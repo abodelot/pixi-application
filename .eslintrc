@@ -10,11 +10,15 @@
     "no-mixed-operators": "off",
     "no-param-reassign": "off",
     "no-plusplus": "off",
+    "no-unused-vars": ["error", {
+      "argsIgnorePattern": "^_"
+    }],
     "quote-props": "off",
     "lines-between-class-members": ["error", "always", {
       "exceptAfterSingleLine": true
     }],
-    "import/prefer-default-export": "off",
+    "import/no-cycle": "off",
+    "import/prefer-default-export": "off"
   },
   "parser": "babel-eslint",
   "settings": {

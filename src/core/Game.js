@@ -11,12 +11,16 @@ class Game {
   #app;
   #currentScene;
   #loader;
+  #listeners;
 
   initialize(app) {
     this.#app = app;
     this.#currentScene = null;
     this.#loader = new PIXI.Loader();
-    this.listeners = {};
+    this.#listeners = {};
+
+    app.ticker.add((_delta) => {
+    });
   }
 
   get app() {
@@ -28,6 +32,7 @@ class Game {
    */
   selectScene(SceneClass) {
     if (this.#currentScene != null) {
+      this.#currentScene.onExit();
       // Remove display container from previous scene
       this.#app.stage.removeChild(this.#currentScene.container);
     }
@@ -66,8 +71,8 @@ class Game {
    */
   emit(eventName, argument) {
     console.log(`Event ${eventName} -> ${argument}`);
-    if (this.listeners[eventName]) {
-      this.listeners[eventName].forEach((callback) => {
+    if (this.#listeners[eventName]) {
+      this.#listeners[eventName].forEach((callback) => {
         callback(argument);
       });
     }
@@ -77,10 +82,10 @@ class Game {
    * Register an event listener
    */
   on(eventName, callback) {
-    if (this.listeners[eventName] === undefined) {
-      this.listeners[eventName] = [];
+    if (this.#listeners[eventName] === undefined) {
+      this.#listeners[eventName] = [];
     }
-    this.listeners[eventName].push(callback);
+    this.#listeners[eventName].push(callback);
   }
 }
 

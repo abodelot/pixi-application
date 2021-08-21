@@ -14,7 +14,13 @@ export class BaseScene {
     this.#container = new PIXI.Container();
   }
 
-  get container() {
-    return this.#container;
+  get container() { return this.#container; }
+  get game() { return this.#game; }
+
+  /**
+   * Callback: before destroying the scene
+   */
+  onExit() {
+    console.log('onExit:', this.constructor.name);
   }
 }

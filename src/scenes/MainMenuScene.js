@@ -1,8 +1,8 @@
-import { BaseScene } from '@src/scenes/BaseScene';
-import { EditorScene } from '@src/scenes/EditorScene';
-
 import { Layout } from '@src/ui/Layout';
 import { MessageBox } from '@src/ui/MessageBox';
+
+import { BaseScene } from './BaseScene';
+import { EditorScene } from './EditorScene';
 
 export class MainMenuScene extends BaseScene {
   constructor(game) {
@@ -13,13 +13,14 @@ export class MainMenuScene extends BaseScene {
     menu.addOption('Editor', () => {
       game.selectScene(EditorScene);
     });
-    menu.addOption('Dialog', () => {
-      const box = new MessageBox('Hello, world');
+    menu.addOption('Help', () => {
+      const box = new MessageBox(
+        'Left click: put tile\n'
+        + 'Middle click: move view\n'
+        + 'Right click: editor menu',
+      );
       box.position.set(30, 30);
       box.onOk(() => {
-        console.log('ok');
-      });
-      box.onCancel(() => {
         this.container.removeChild(box);
       });
       this.container.addChild(box);

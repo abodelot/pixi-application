@@ -2,9 +2,15 @@ import { Tileset } from '@src/core/Tileset';
 import { Tilemap } from '@src/core/Tilemap';
 import { TileSelector } from '@src/core/TileSelector';
 
+import { ContextMenu } from '@src/ui/ContextMenu';
+import { ScrollContainer } from '@src/ui/ScrollContainer';
+
 import { BaseScene } from './BaseScene';
+import { MainMenuScene } from './MainMenuScene';
 
 export class EditorScene extends BaseScene {
+  #tilemap;
+
   constructor(game) {
     super(game);
 
@@ -12,19 +18,52 @@ export class EditorScene extends BaseScene {
     const tileSelector = new TileSelector(tileset);
     this.container.addChild(tileSelector);
 
-    const tilemap = new Tilemap(tileset);
-    tilemap.x = 256;
-    this.container.addChild(tilemap);
-    if (!tilemap.loadFromLocalStorage()) {
-      // Create a default empty map
-      const defaultMap = [];
-      const width = 25;
-      const height = 25;
-      defaultMap.length = width * height;
-      defaultMap.fill(2); // Water
-      tilemap.load(defaultMap, width, height);
+    const scrollContainer = new ScrollContainer({
+      width: window.innerWidth - 256,
+      height: window.innerHeight,
+    });
+    scrollContainer.x = 256;
+
+    this.container.addChild(scrollContainer);
+    this.#tilemap = new Tilemap(tileset);
+    if (!this.#tilemap.loadFromLocalStorage()) {
+      this.createNewMap();
     }
-    // Zoom 2x
-    tilemap.setScale(2);
+
+    scrollContainer.setContent(this.#tilemap);
+
+    let contextMenu = null;
+    // Replace native right click with custom menu
+    game.app.view.oncontextmenu = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (contextMenu) {
+        contextMenu.close();
+      }
+      contextMenu = new ContextMenu();
+      contextMenu.addItem('New map', this.createNewMap.bind(this));
+      contextMenu.addItem('Save and quit', () => {
+        this.#tilemap.saveToLocalStorage();
+        game.selectScene(MainMenuScene);
+      });
+      contextMenu.position.set(e.pageX, e.pageY);
+      game.app.stage.addChild(contextMenu);
+    };
+  }
+
+  /**
+   * Create a new empty map
+   */
+  createNewMap(size = 80) {
+    const emptyMap = [];
+    emptyMap.length = size * size;
+    emptyMap.fill(1); // Default tile: grass
+    this.#tilemap.load(emptyMap, size, size);
+  }
+
+  onExit() { // override
+    // Restore native context menu
+    this.game.app.view.oncontextmenu = null;
   }
 }

@@ -1,7 +1,6 @@
 import * as PIXI from 'pixi.js';
 
 import { game } from '@src/core/Game';
-import { ContextMenu } from '@src/ui/ContextMenu';
 import { Style } from '@src/ui/Style';
 
 import { MainMenuScene } from '@src/scenes/MainMenuScene';
@@ -37,21 +36,4 @@ game.loadAssets(assets, () => {
 
 window.onload = () => {
   document.body.appendChild(app.view);
-
-  let contextMenu = null;
-  // Replace native right click with custom menu
-  app.view.oncontextmenu = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (contextMenu) {
-      contextMenu.close();
-    }
-    contextMenu = new ContextMenu();
-    contextMenu.addItem('New');
-    contextMenu.addItem('Edit');
-    contextMenu.addItem('Save and quit');
-    contextMenu.position.set(e.pageX, e.pageY);
-    app.stage.addChild(contextMenu);
-  };
 };

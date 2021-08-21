@@ -18,13 +18,12 @@ export class Tilemap extends PIXI.Container {
     this.#background.tint = 0x000000;
     this.#background.width = 120;
     this.#background.height = 200;
-    this.addChild(this.#background);
 
     // Allow mouse interaction
     this.interactive = true;
-    this.on('mousemove', this.onMouseMove.bind(this));
-    this.on('mousedown', this.onMouseDown.bind(this));
-    this.on('mouseup', this.onMouseUp.bind(this));
+    this.on('pointermove', this.onMouseMove.bind(this));
+    this.on('pointerdown', this.onMouseDown.bind(this));
+    this.on('pointerup', this.onMouseUp.bind(this));
 
     this.#hoveredTile = null;
     this.#selectedTileId = 0;
@@ -41,8 +40,22 @@ export class Tilemap extends PIXI.Container {
   load(tiles, mapWidth, mapHeight) {
     this.mapWidth = mapWidth;
     this.mapHeight = mapHeight;
+    // Remove all existing tiles
+    while (this.children[0]) {
+      this.removeChild(this.children[0]);
+    }
     this.#tiles = [];
 
+    // Compute size of the bounding box
+    this.pixelWidth = (mapWidth + mapHeight) * this.#tileset.tileWidth / 2;
+    this.pixelHeight = (mapWidth + mapHeight) * this.#tileset.tileHeight / 2;
+
+    // Resize the tilemap background sprite
+    this.#background.width = this.pixelWidth;
+    this.#background.height = this.pixelHeight;
+    this.addChild(this.#background);
+
+    // Create tiles
     for (let j = 0; j < mapHeight; ++j) {
       for (let i = 0; i < mapWidth; ++i) {
         const index = j * mapWidth + i;
@@ -57,13 +70,7 @@ export class Tilemap extends PIXI.Container {
       }
     }
 
-    // Compute size of the bounding box
-    this.pixelWidth = (mapWidth + mapHeight) * this.#tileset.tileWidth / 2;
-    this.pixelHeight = (mapWidth + mapHeight) * this.#tileset.tileHeight / 2;
-
-    // Resize the tilemap background sprite
-    this.#background.width = this.pixelWidth;
-    this.#background.height = this.pixelHeight;
+    this.setScale(2);
 
     const cursorTexture = game.getTexture('cursor.png');
     cursorTexture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
@@ -148,9 +155,12 @@ export class Tilemap extends PIXI.Container {
     }
   }
 
-  onMouseDown() {
-    this.#isMousePressed = true;
-    this.updateHoveredTile(this.#selectedTileId);
+  onMouseDown(event) {
+    // Left click
+    if (event.data.originalEvent.button === 0) {
+      this.#isMousePressed = true;
+      this.updateHoveredTile(this.#selectedTileId);
+    }
   }
 
   onMouseUp() {
@@ -168,7 +178,6 @@ export class Tilemap extends PIXI.Container {
       const sprite = this.#tiles[index];
       sprite.texture = this.#tileset.getTileTexture(tileId);
       sprite.tileId = tileId;
-      this.saveToLocalStorage();
     }
   }
 
