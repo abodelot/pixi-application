@@ -15,7 +15,7 @@ export class Layout extends PIXI.Container {
     const button = new Button(name);
     button.position.y = y;
     this.addChild(button);
-    button.click = callback;
+    button.pointertap = callback;
     return button;
   }
 }

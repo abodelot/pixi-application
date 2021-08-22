@@ -18,14 +18,9 @@ class Game {
     this.#currentScene = null;
     this.#loader = new PIXI.Loader();
     this.#listeners = {};
-
-    app.ticker.add((_delta) => {
-    });
   }
 
-  get app() {
-    return this.#app;
-  }
+  get app() { return this.#app; }
 
   /**
    * Create a new instance of given scene, and display it
@@ -67,14 +62,11 @@ class Game {
   }
 
   /**
-   * Trigger an event
+   * Send an event and dispatch it to the listeners
    */
   emit(eventName, argument) {
-    console.log(`Event ${eventName} -> ${argument}`);
     if (this.#listeners[eventName]) {
-      this.#listeners[eventName].forEach((callback) => {
-        callback(argument);
-      });
+      this.#listeners[eventName].forEach((callback) => callback(argument));
     }
   }
 
@@ -89,4 +81,5 @@ class Game {
   }
 }
 
+// Export singleton instance
 export const game = new Game();

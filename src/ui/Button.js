@@ -50,10 +50,10 @@ export class Button extends PIXI.Container {
       this.#text.style.dropShadow = false;
 
       // Events
-      this.mouseout = this.defaultStyle;
-      this.mouseover = this.hoverStyle;
-      this.mouseup = this.defaultStyle;
-      this.mousedown = this.focusStyle;
+      this.pointerout = this.defaultStyle;
+      this.pointerover = this.hoverStyle;
+      this.pointerup = this.defaultStyle;
+      this.pointerdown = this.focusStyle;
     } else {
       this.#text.style.fill = Style.textColorDisabled;
       this.#text.style.dropShadow = true;
@@ -61,10 +61,10 @@ export class Button extends PIXI.Container {
       this.#text.style.dropShadowColor = 0xffffff;
 
       // Events
-      this.mouseout = null;
-      this.mouseover = null;
-      this.mouseup = null;
-      this.mousedown = null;
+      this.pointerout = null;
+      this.pointerover = null;
+      this.pointerup = null;
+      this.pointerdown = null;
     }
   }
 }

@@ -1,6 +1,7 @@
 import { Tileset } from '@src/core/Tileset';
 import { Tilemap } from '@src/core/Tilemap';
 import { TileSelector } from '@src/core/TileSelector';
+import { Toolbar } from '@src/core/Toolbar';
 
 import { ContextMenu } from '@src/ui/ContextMenu';
 import { ScrollContainer } from '@src/ui/ScrollContainer';
@@ -18,9 +19,11 @@ export class EditorScene extends BaseScene {
     const tileSelector = new TileSelector(tileset);
     this.container.addChild(tileSelector);
 
+    const toolbarHeight = 200;
+
     const scrollContainer = new ScrollContainer({
       width: window.innerWidth - 256,
-      height: window.innerHeight,
+      height: window.innerHeight - toolbarHeight,
     });
     scrollContainer.x = 256;
 
@@ -31,6 +34,15 @@ export class EditorScene extends BaseScene {
     }
 
     scrollContainer.setContent(this.#tilemap);
+
+    // Toolbar at screen bottom
+    const toolbar = new Toolbar({
+      width: window.innerWidth,
+      height: toolbarHeight,
+      tilemap: this.#tilemap,
+    });
+    toolbar.y = window.innerHeight - toolbarHeight;
+    this.container.addChild(toolbar);
 
     let contextMenu = null;
     // Replace native right click with custom menu
@@ -43,6 +55,9 @@ export class EditorScene extends BaseScene {
       }
       contextMenu = new ContextMenu();
       contextMenu.addItem('New map', this.createNewMap.bind(this));
+      contextMenu.addItem('Save', () => {
+        this.#tilemap.saveToLocalStorage();
+      });
       contextMenu.addItem('Save and quit', () => {
         this.#tilemap.saveToLocalStorage();
         game.selectScene(MainMenuScene);
@@ -55,7 +70,7 @@ export class EditorScene extends BaseScene {
   /**
    * Create a new empty map
    */
-  createNewMap(size = 80) {
+  createNewMap(size = 100) {
     const emptyMap = [];
     emptyMap.length = size * size;
     emptyMap.fill(1); // Default tile: grass

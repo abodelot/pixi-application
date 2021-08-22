@@ -34,6 +34,10 @@ export class Tilemap extends PIXI.Container {
     });
   }
 
+  get tileIds() {
+    return this.#tiles.map((tile) => tile.tileId);
+  }
+
   /**
    * Load a tilemap from an array of tile ids
    */
@@ -178,6 +182,8 @@ export class Tilemap extends PIXI.Container {
       const sprite = this.#tiles[index];
       sprite.texture = this.#tileset.getTileTexture(tileId);
       sprite.tileId = tileId;
+
+      game.emit('tilemap_updated', { index, tileId });
     }
   }
 

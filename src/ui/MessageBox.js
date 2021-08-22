@@ -74,12 +74,12 @@ export class MessageBox extends PIXI.Container {
   }
 
   onOk(callback) {
-    this.#buttonOk.click = callback;
+    this.#buttonOk.pointertap = callback;
     this.#buttonOk.enable(true);
   }
 
   onCancel(callback) {
-    this.#buttonCancel.click = callback;
+    this.#buttonCancel.pointertap = callback;
     this.#buttonCancel.enable(true);
   }
 }
