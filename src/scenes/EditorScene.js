@@ -21,10 +21,12 @@ export class EditorScene extends BaseScene {
 
     const toolbarHeight = 200;
 
-    const scrollContainer = new ScrollContainer({
+    const viewPort = {
       width: window.innerWidth - 256,
       height: window.innerHeight - toolbarHeight,
-    });
+    };
+
+    const scrollContainer = new ScrollContainer(viewPort.width, viewPort.height);
     scrollContainer.x = 256;
 
     this.container.addChild(scrollContainer);
@@ -36,10 +38,9 @@ export class EditorScene extends BaseScene {
     scrollContainer.setContent(this.#tilemap);
 
     // Toolbar at screen bottom
-    const toolbar = new Toolbar({
-      width: window.innerWidth,
-      height: toolbarHeight,
+    const toolbar = new Toolbar(window.innerWidth, toolbarHeight, {
       tilemap: this.#tilemap,
+      viewPort,
     });
     toolbar.y = window.innerHeight - toolbarHeight;
     this.container.addChild(toolbar);

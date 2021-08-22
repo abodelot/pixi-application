@@ -34,9 +34,9 @@ export class Tilemap extends PIXI.Container {
     });
   }
 
-  get tileIds() {
-    return this.#tiles.map((tile) => tile.tileId);
-  }
+  get tileIds() { return this.#tiles.map((tile) => tile.tileId); }
+  get nbCols() { return this.mapWidth; }
+  get nbRows() { return this.mapHeight; }
 
   /**
    * Load a tilemap from an array of tile ids

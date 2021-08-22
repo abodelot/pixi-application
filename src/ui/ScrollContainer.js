@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 
+import { game } from '@src/core/Game';
 import { clamp } from '@src/core/Utils';
 
 /**
@@ -10,17 +11,17 @@ export class ScrollContainer extends PIXI.Container {
   #content;
 
   /**
-   * @param options.width: view width (pixels)
-   * @param options.height: view height (pixels)
+   * @param viewWidth: viewport width (pixels)
+   * @param viewHeight: viewport height (pixels)
    */
-  constructor(options) {
+  constructor(viewWidth, viewHeight) {
     super();
 
     // Container bounding box. It's not visible, because it's always overlaped
     // by the content, but a black sprite is used to trigger mouse interaction.
     this.#box = new PIXI.Sprite(PIXI.Texture.WHITE);
-    this.#box.width = options.width;
-    this.#box.height = options.height;
+    this.#box.width = viewWidth;
+    this.#box.height = viewHeight;
     this.#box.tint = 0x000000;
     this.addChild(this.#box);
 
@@ -31,10 +32,14 @@ export class ScrollContainer extends PIXI.Container {
     // Use a mask to crop content outside of the bounding box
     const mask = new PIXI.Graphics();
     mask.beginFill();
-    mask.drawRect(0, 0, options.width, options.height);
+    mask.drawRect(0, 0, viewWidth, viewHeight);
     mask.endFill();
     this.addChild(mask);
     this.mask = mask;
+
+    game.on('minimap_clicked', (position) => {
+      this.moveContentTo(position);
+    });
   }
 
   setContent(element) {
@@ -51,26 +56,22 @@ export class ScrollContainer extends PIXI.Container {
     if (event.data.originalEvent.button === 1) {
       event.stopPropagation();
       const position = event.data.getLocalPosition(this);
-      this.centerContent(position);
+
+      // Delta movement vector to center content (position is the new center)
+      const dx = position.x - (this.#box.width / 2);
+      const dy = position.y - (this.#box.height / 2);
+
+      // Apply delta and move content
+      this.moveContentTo({ x: this.#content.x - dx, y: this.#content.y - dy });
     }
   }
 
-  centerContent(position) {
-    // Delta movement vector: position becomes the new center
-    const dx = position.x - (this.#box.width / 2);
-    const dy = position.y - (this.#box.height / 2);
+  moveContentTo(position) {
+    // Ensure content remains inside the box boundaries
+    const x = clamp(position.x, -this.#content.width + this.#box.width, 0);
+    const y = clamp(position.y, -this.#content.height + this.#box.height, 0);
 
-    // Apply delta, ensure content remains inside the box boundaries
-    this.#content.x = clamp(
-      this.#content.x - dx,
-      -this.#content.width + this.#box.width,
-      0,
-    );
-
-    this.#content.y = clamp(
-      this.#content.y - dy,
-      -this.#content.height + this.#box.height,
-      0,
-    );
+    this.#content.position = { x, y };
+    game.emit('viewport_moved', { x, y });
   }
 }

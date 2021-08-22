@@ -10,8 +10,9 @@ PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 PIXI.settings.ROUND_PIXELS = true;
 
 const assets = [
-  'box9.png',
-  'box-shadow.png',
+  'ui-9box.png',
+  'shadow-9box.png',
+  'screenview-9box.png',
   'tileset.png',
   'cursor.png',
 ];
@@ -29,8 +30,8 @@ window.onload = () => {
     console.log('assets loaded');
 
     Style.setTextures({
-      button: game.getTexture('box9.png'),
-      shadow: game.getTexture('box-shadow.png'),
+      button: game.getTexture('ui-9box.png'),
+      shadow: game.getTexture('shadow-9box.png'),
     });
 
     game.selectScene(MainMenuScene);

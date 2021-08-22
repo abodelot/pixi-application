@@ -8,20 +8,31 @@ export class Toolbar extends PIXI.Container {
   #bg;
   #miniMap;
 
-  constructor(options) {
+  /**
+   * @param width: content width (pixels)
+   * @param height: content height (pixels)
+   * @param options.tilemap
+   * @param options.viewPort
+   */
+  constructor(width, height, options) {
     super();
 
     this.#bg = new PIXI.NineSlicePlane(Style.textures.panel, 3, 3, 3, 3);
-    this.#bg.width = options.width;
-    this.#bg.height = options.height;
+    this.#bg.width = width;
+    this.#bg.height = height;
 
-    this.#miniMap = new MiniMap(options.tilemap);
-
-    const h = options.height - 6;
-    this.#miniMap.height = h;
+    // Compute minimap size
+    const miniMapHeight = height - 6;
     // Same aspect ratio that real tilemap
-    const miniMapWidth = options.tilemap.width * h / options.tilemap.height;
-    this.#miniMap.width = miniMapWidth;
+    const miniMapWidth = options.tilemap.width * miniMapHeight / options.tilemap.height;
+    const ratio = miniMapWidth / options.tilemap.width;
+    this.#miniMap = new MiniMap(
+      miniMapWidth,
+      miniMapHeight,
+      options.tilemap,
+      options.viewPort,
+      ratio,
+    );
 
     // Align on right
     this.#miniMap.x = this.#bg.width - miniMapWidth - 3;
