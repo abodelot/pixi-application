@@ -9,7 +9,6 @@ export class Tilemap extends PIXI.Container {
   #hoveredTile;
   #selectedTileId;
   #cursor;
-  #isMousePressed;
 
   constructor(tileset) {
     super();
@@ -23,11 +22,9 @@ export class Tilemap extends PIXI.Container {
     this.interactive = true;
     this.on('pointermove', this.onMouseMove.bind(this));
     this.on('pointerdown', this.onMouseDown.bind(this));
-    this.on('pointerup', this.onMouseUp.bind(this));
 
     this.#hoveredTile = null;
     this.#selectedTileId = 0;
-    this.#isMousePressed = false;
 
     game.on('tile_id_selected', (tileId) => {
       this.#selectedTileId = tileId;
@@ -153,7 +150,7 @@ export class Tilemap extends PIXI.Container {
         this.#cursor.visible = false;
       }
 
-      if (this.#isMousePressed) {
+      if (event.data.pressure > 0) {
         this.updateHoveredTile(this.#selectedTileId);
       }
     }
@@ -161,14 +158,9 @@ export class Tilemap extends PIXI.Container {
 
   onMouseDown(event) {
     // Left click
-    if (event.data.originalEvent.button === 0) {
-      this.#isMousePressed = true;
+    if (event.data.button === 0) {
       this.updateHoveredTile(this.#selectedTileId);
     }
-  }
-
-  onMouseUp() {
-    this.#isMousePressed = false;
   }
 
   setScale(ratio) {

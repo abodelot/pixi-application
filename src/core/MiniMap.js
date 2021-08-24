@@ -38,18 +38,11 @@ export class MiniMap extends PIXI.Container {
       this.#texture.update();
     });
 
+    // Drag'n'drop screenView
     this.interactive = true;
-    this.pointertap = (event) => {
-      const position = event.data.getLocalPosition(this);
-      // Offset to make click at the center of screenView
-      position.x -= this.#screenView.width / 2;
-      position.y -= this.#screenView.height / 2;
-
-      // Convert position to tilemap coords system
-      position.x /= -ratio;
-      position.y /= -ratio;
-      game.emit('minimap_clicked', position);
-    };
+    this.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    this.on('pointermove', this.onMouseMove.bind(this));
+    this.on('pointerdown', this.onMouseDown.bind(this));
 
     game.on('viewport_moved', (position) => {
       this.moveScreenView(position);
@@ -129,5 +122,33 @@ export class MiniMap extends PIXI.Container {
     // Convert tilemap position to screenView dimensions
     this.#screenView.x = -position.x * this.#ratio;
     this.#screenView.y = -position.y * this.#ratio;
+  }
+
+  /**
+   * Sync the tilemap with the minimap screenView position
+   * @param position: screenView position in the minimap
+   */
+  moveTilemap(position) {
+    // Offset to make click at the center of screenView
+    position.x -= this.#screenView.width / 2;
+    position.y -= this.#screenView.height / 2;
+
+    // Convert position to tilemap coords system
+    position.x /= -this.#ratio;
+    position.y /= -this.#ratio;
+    game.emit('minimap_clicked', position);
+  }
+
+  onMouseDown(event) {
+    // Left click
+    if (event.data.button === 0) {
+      this.moveTilemap(event.data.getLocalPosition(this));
+    }
+  }
+
+  onMouseMove(event) {
+    if (event.data.pressure > 0) {
+      this.moveTilemap(event.data.getLocalPosition(this));
+    }
   }
 }
