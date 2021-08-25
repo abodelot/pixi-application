@@ -4,7 +4,10 @@ import { Tileset } from './Tileset';
 
 export class Tilemap extends PIXI.Container {
   #background;
-  #tiles = [];
+  #cols;
+  #rows;
+  #tileIds;
+  #tileGraphics;
   #tileset;
   #hoveredTile;
   #selectedTileId;
@@ -15,8 +18,14 @@ export class Tilemap extends PIXI.Container {
     this.#tileset = tileset;
     this.#background = new PIXI.Sprite(PIXI.Texture.WHITE);
     this.#background.tint = 0x000000;
-    this.#background.width = 120;
-    this.#background.height = 200;
+    this.addChild(this.#background);
+
+    this.#tileGraphics = new PIXI.Graphics();
+    this.addChild(this.#tileGraphics);
+
+    const cursorTexture = game.getTexture('cursor.png');
+    this.#cursor = new PIXI.Sprite(cursorTexture);
+    this.addChild(this.#cursor);
 
     // Allow mouse interaction
     this.interactive = true;
@@ -31,53 +40,48 @@ export class Tilemap extends PIXI.Container {
     });
   }
 
-  get tileIds() { return this.#tiles.map((tile) => tile.tileId); }
-  get nbCols() { return this.mapWidth; }
-  get nbRows() { return this.mapHeight; }
+  get tileIds() { return this.#tileIds; }
+  get nbCols() { return this.#cols; }
+  get nbRows() { return this.#rows; }
 
   /**
    * Load a tilemap from an array of tile ids
    */
-  load(tiles, mapWidth, mapHeight) {
-    this.mapWidth = mapWidth;
-    this.mapHeight = mapHeight;
-    // Remove all existing tiles
-    while (this.children[0]) {
-      this.removeChild(this.children[0]);
-    }
-    this.#tiles = [];
+  load(tileIds, cols, rows) {
+    this.#cols = cols;
+    this.#rows = rows;
+    this.#tileIds = tileIds;
 
     // Compute size of the bounding box
-    this.pixelWidth = (mapWidth + mapHeight) * this.#tileset.tileWidth / 2;
-    this.pixelHeight = (mapWidth + mapHeight) * this.#tileset.tileHeight / 2;
+    this.pixelWidth = (cols + rows) * this.#tileset.tileWidth / 2;
+    this.pixelHeight = (cols + rows) * this.#tileset.tileHeight / 2;
 
     // Resize the tilemap background sprite
     this.#background.width = this.pixelWidth;
     this.#background.height = this.pixelHeight;
-    this.addChild(this.#background);
 
-    // Create tiles
-    for (let j = 0; j < mapHeight; ++j) {
-      for (let i = 0; i < mapWidth; ++i) {
-        const index = j * mapWidth + i;
-        const id = tiles[index];
-        const sprite = new PIXI.Sprite(this.#tileset.getTileTexture(id));
-
-        sprite.position = this.coordsToPixels(i, j);
-        sprite.tileId = id;
-        this.#tiles.push(sprite);
-
-        this.addChild(sprite);
+    // Draw all the tiles inside tileGraphics object
+    this.#tileGraphics.clear();
+    for (let j = 0; j < rows; ++j) {
+      for (let i = 0; i < cols; ++i) {
+        const index = j * cols + i;
+        this.drawTile(i, j, tileIds[index]);
       }
     }
 
     this.setScale(2);
-
-    const cursorTexture = game.getTexture('cursor.png');
-    cursorTexture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
-    this.#cursor = new PIXI.Sprite(cursorTexture);
-    this.addChild(this.#cursor);
     this.#cursor.position = this.coordsToPixels(0, 0);
+  }
+
+  drawTile(i, j, tileId) {
+    // Tile position
+    const { x, y } = this.coordsToPixels(i, j);
+    this.#tileGraphics.beginTextureFill({
+      texture: this.#tileset.getTileTexture(tileId),
+      matrix: new PIXI.Matrix().translate(x, y),
+    });
+    this.#tileGraphics.drawRect(x, y, this.#tileset.tileWidth, this.#tileset.tileHeight);
+    this.#tileGraphics.endFill();
   }
 
   /**
@@ -100,9 +104,9 @@ export class Tilemap extends PIXI.Container {
 
   saveToLocalStorage() {
     const data = {
-      width: this.mapWidth,
-      height: this.mapHeight,
-      tiles: this.#tiles.map((sprite) => (sprite.tileId)),
+      width: this.#cols,
+      height: this.#rows,
+      tiles: this.#tileIds,
     };
 
     localStorage.map = JSON.stringify(data);
@@ -115,7 +119,7 @@ export class Tilemap extends PIXI.Container {
    */
   pixelsToCoords(x, y) {
     x -= this.#tileset.tileWidth / 2;
-    x -= (this.mapHeight - 1) * this.#tileset.tileWidth * 0.5;
+    x -= (this.#rows - 1) * this.#tileset.tileWidth * 0.5;
 
     return {
       i: Math.floor((y + Math.floor(x / 2)) / this.#tileset.tileHeight),
@@ -130,7 +134,7 @@ export class Tilemap extends PIXI.Container {
   coordsToPixels(i, j) {
     return {
       x: (i * this.#tileset.tileWidth * 0.5) - (j * this.#tileset.tileWidth * 0.5)
-        + ((this.mapHeight - 1) * this.#tileset.tileWidth * 0.5),
+        + ((this.#rows - 1) * this.#tileset.tileWidth * 0.5),
       y: (i * this.#tileset.tileHeight * 0.5) + (j * this.#tileset.tileHeight * 0.5),
     };
   }
@@ -141,7 +145,7 @@ export class Tilemap extends PIXI.Container {
     if (position.x >= 0 && position.y >= 0
         && position.x < this.pixelWidth && position.y < this.pixelHeight) {
       const coords = this.pixelsToCoords(position.x, position.y);
-      if (coords.i >= 0 && coords.i < this.mapWidth && coords.j >= 0 && coords.j < this.mapHeight) {
+      if (coords.i >= 0 && coords.i < this.#cols && coords.j >= 0 && coords.j < this.#rows) {
         this.#hoveredTile = coords;
         this.#cursor.position = this.coordsToPixels(coords.i, coords.j);
         this.#cursor.visible = true;
@@ -169,19 +173,21 @@ export class Tilemap extends PIXI.Container {
   }
 
   setTileAt(i, j, tileId) {
-    if (i >= 0 && i < this.mapWidth && j >= 0 && j < this.mapHeight) {
-      const index = j * this.mapWidth + i;
-      const sprite = this.#tiles[index];
-      sprite.texture = this.#tileset.getTileTexture(tileId);
-      sprite.tileId = tileId;
+    if (i >= 0 && i < this.#cols && j >= 0 && j < this.#rows) {
+      const index = j * this.#cols + i;
+      if (this.#tileIds[index] !== tileId) {
+        // Redraw tile and update tileIds array
+        this.drawTile(i, j, tileId);
+        this.#tileIds[index] = tileId;
 
-      game.emit('tilemap_updated', { index, tileId });
+        game.emit('tilemap_updated', { index, tileId });
+      }
     }
   }
 
   getTileAt(i, j) {
-    if (i >= 0 && i < this.mapWidth && j >= 0 && j < this.mapHeight) {
-      return this.#tiles[j * this.mapWidth + i].tileId;
+    if (i >= 0 && i < this.#cols && j >= 0 && j < this.#rows) {
+      return this.#tileIds[j * this.#cols + i];
     }
     return null;
   }
