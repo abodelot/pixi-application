@@ -16,8 +16,8 @@ export class MainMenuScene extends BaseScene {
     menu.addOption('Help', () => {
       const box = new MessageBox(
         'Left click: put tile\n'
-        + 'Middle click: move view\n'
-        + 'Right click: editor menu',
+        + 'Middle click: center view on cursor\n'
+        + 'Right click: show editor menu',
       );
       box.position.set(30, 30);
       box.onOk(() => {

@@ -9,13 +9,8 @@ export class Button extends PIXI.Container {
   constructor(name) {
     super();
 
-    this.#text = new PIXI.Text(name, {
-      fontFamily: Style.fontFamily,
-      fontSize: Style.fontSize,
-      fill: Style.textCcolor,
-    });
-
-    this.#bg = new PIXI.NineSlicePlane(Style.textures.button.normal, 3, 3, 3, 3);
+    this.#text = Style.createText(name);
+    this.#bg = Style.createNineSlicePane(Style.textures.button.normal);
     this.#bg.width = Style.buttonWidth;
     this.#bg.height = Style.buttonHeight;
 

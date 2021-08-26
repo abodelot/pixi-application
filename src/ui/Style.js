@@ -4,6 +4,7 @@ class StyleDef {
   constructor() {
     this.padding = 4;
     this.margin = 4;
+    this.nineBoxBorder = 3;
     this.bgColor = 0xb8b8b8;
     this.bgColorSelected = 0x000080;
     this.fontFamily = 'Sans-Serif';
@@ -40,6 +41,26 @@ class StyleDef {
 
     this.textures.panel = new PIXI.Texture(tex, new PIXI.Rectangle(0, 36, 12, 12));
     this.textures.shadow = textures.shadow;
+  }
+
+  /**
+   * Text with default settings
+   * @return PIXI.Text
+   */
+  createText(text) {
+    return new PIXI.Text(text, {
+      fontFamily: this.fontFamily,
+      fontSize: this.fontSize,
+      fill: this.textColor,
+    });
+  }
+
+  /**
+   * PIXI.NineSlicePlane with default settings
+   * @return PIXI.NineSlicePlane
+   */
+  createNineSlicePane(texture, r = this.nineBoxBorder) {
+    return new PIXI.NineSlicePlane(texture, r, r, r, r);
   }
 
   /**

@@ -10,13 +10,8 @@ export class Tab extends PIXI.Container {
   constructor(name) {
     super();
 
-    this.#text = new PIXI.Text(name, {
-      fontFamily: Style.fontFamily,
-      fontSize: Style.fontSize,
-      fill: Style.textColor,
-    });
-
-    this.#bg = new PIXI.NineSlicePlane(Style.textures.tab.normal, 3, 3, 3, 3);
+    this.#text = Style.createText(name);
+    this.#bg = Style.createNineSlicePane(Style.textures.tab.normal);
     const padx = Style.padding * 2; // inner horizontal padding
     this.#bg.width = padx * 2 + this.#text.width;
     this.#bg.height = Style.buttonHeight;

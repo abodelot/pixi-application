@@ -14,11 +14,7 @@ export class ContextMenuItem extends PIXI.Container {
     this.#bg.height = Style.baseHeight;
     this.#bg.width = 120;
 
-    this.#text = new PIXI.Text(label, {
-      fontFamily: Style.fontFamily,
-      fontSize: Style.fontSize,
-      fill: Style.textColor,
-    });
+    this.#text = Style.createText(label);
     this.#text.position.set(Style.padding, Style.padding);
 
     this.addChild(this.#bg, this.#text);

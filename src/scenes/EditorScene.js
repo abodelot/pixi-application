@@ -3,6 +3,7 @@ import * as PIXI from 'pixi.js';
 import { Tileset } from '@src/core/Tileset';
 import { Tilemap } from '@src/core/Tilemap';
 import { TileSelector } from '@src/core/TileSelector';
+import { TilesetViewer } from '@src/core/TilesetViewer';
 import { Toolbar } from '@src/core/Toolbar';
 
 import { ContextMenu } from '@src/ui/ContextMenu';
@@ -26,10 +27,9 @@ export class EditorScene extends BaseScene {
     this.container.addChild(tabs);
 
     const tileset = new Tileset(game.getTexture('tileset.png'), 32, 16);
-    const tileSelector = new TileSelector(tileset);
-    tabs.addTab('Terrain', tileSelector);
-    tabs.addTab('Items', new PIXI.Text('Content of tab 2'));
-    tabs.addTab('Units', new PIXI.Text('Content of tab 3'));
+    tabs.addTab('Terrain', new TileSelector(tileset));
+    tabs.addTab('Tileset', new TilesetViewer(tileset));
+    tabs.addTab('Items', new PIXI.Text('Content of tab 3'));
 
     const viewPort = {
       width: window.innerWidth - sidebarWidth,

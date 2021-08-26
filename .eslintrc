@@ -10,8 +10,9 @@
     "no-mixed-operators": "off",
     "no-param-reassign": "off",
     "no-plusplus": "off",
-    "no-unused-vars": ["error", {
-      "argsIgnorePattern": "^_"
+    "prefer-destructuring": ["error", {
+      "array": false,
+      "object": true
     }],
     "quote-props": "off",
     "lines-between-class-members": ["error", "always", {

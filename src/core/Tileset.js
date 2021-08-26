@@ -4,6 +4,7 @@ export class Tileset {
   // Key: 4 booleans, encoded as 0|1 string. Each bool value indicates if the tile
   // connects to another road tile, for each direction: Up, Down, Left, Right
   // Value: The road tile ID
+
   static RoadNeighbors = {
     '0010': 64,
     '1000': 65,

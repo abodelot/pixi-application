@@ -11,8 +11,9 @@ export class TabContainer extends PIXI.Container {
   constructor(width, height) {
     super();
 
-    this.#bg = new PIXI.NineSlicePlane(Style.textures.tab.panel, 3, 3, 3, 3);
-    this.#bg.y = Style.buttonHeight - 3;
+    this.#bg = Style.createNineSlicePane(Style.textures.tab.panel);
+    // Make the tab's bottom border overlap the bg's top border
+    this.#bg.y = Style.buttonHeight - Style.nineBoxBorder;
     this.#bg.width = width;
     this.#bg.height = height;
 

@@ -30,12 +30,7 @@ export class MessageBox extends PIXI.Container {
     this.#headerText.position.set(Style.padding, Style.padding);
     this.#header.addChild(this.#headerText);
 
-    this.#text = new PIXI.Text(message, {
-      fontFamily: Style.fontFamily,
-      fontSize: Style.fontSize,
-      fill: Style.textColor,
-    });
-
+    this.#text = Style.createText(message);
     y = this.#header.height + Style.boxPadding;
     this.#text.position.set(Style.boxPadding, y);
 
@@ -60,7 +55,7 @@ export class MessageBox extends PIXI.Container {
       y,
     );
 
-    this.#bg = new PIXI.NineSlicePlane(Style.textures.panel, 3, 3, 3, 3);
+    this.#bg = Style.createNineSlicePane(Style.textures.panel);
     this.#bg.width = totalWidth;
     this.#bg.height = y + this.#buttonOk.height + Style.boxPadding;
 
