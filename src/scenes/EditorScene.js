@@ -4,56 +4,55 @@ import { Tileset } from '@src/core/Tileset';
 import { Tilemap } from '@src/core/Tilemap';
 import { TileSelector } from '@src/core/TileSelector';
 import { TilesetViewer } from '@src/core/TilesetViewer';
+import { Context } from '@src/core/Context';
 import { Toolbar } from '@src/core/Toolbar';
 
 import { ContextMenu } from '@src/ui/ContextMenu';
 import { ScrollContainer } from '@src/ui/ScrollContainer';
-
 import { TabContainer } from '@src/ui/TabContainer';
 
 import { BaseScene } from './BaseScene';
 import { MainMenuScene } from './MainMenuScene';
 
+const TOOLBAR_HEIGHT = 200;
+const SIDEBAR_WIDTH = 260;
+
 export class EditorScene extends BaseScene {
-  #tilemap;
+  #tabs;
+  #toolbar;
+  #scrollContainer;
 
   constructor(game) {
     super(game);
 
-    const toolbarHeight = 200;
-    const sidebarWidth = 260;
-
-    const tabs = new TabContainer(sidebarWidth, window.innerHeight - toolbarHeight);
-    this.container.addChild(tabs);
+    this.#tabs = new TabContainer(SIDEBAR_WIDTH, window.innerHeight - TOOLBAR_HEIGHT);
+    this.container.addChild(this.#tabs);
 
     const tileset = new Tileset(game.getTexture('tileset.png'), 32, 16);
-    tabs.addTab('Terrain', new TileSelector(tileset));
-    tabs.addTab('Tileset', new TilesetViewer(tileset));
-    tabs.addTab('Items', new PIXI.Text('Content of tab 3'));
+    this.#tabs.addTab('Terrain', new TileSelector(tileset));
+    this.#tabs.addTab('Tileset', new TilesetViewer(tileset));
+    this.#tabs.addTab('Items', new PIXI.Text('Content of tab 3'));
 
-    const viewPort = {
-      width: window.innerWidth - sidebarWidth,
-      height: window.innerHeight - toolbarHeight,
+    Context.viewPort = {
+      width: window.innerWidth - SIDEBAR_WIDTH,
+      height: window.innerHeight - TOOLBAR_HEIGHT,
     };
 
-    const scrollContainer = new ScrollContainer(viewPort.width, viewPort.height);
-    scrollContainer.x = sidebarWidth;
+    this.#scrollContainer = new ScrollContainer(Context.viewPort.width, Context.viewPort.height);
+    this.#scrollContainer.x = SIDEBAR_WIDTH;
 
-    this.container.addChild(scrollContainer);
-    this.#tilemap = new Tilemap(tileset);
-    if (!this.#tilemap.loadFromLocalStorage()) {
+    this.container.addChild(this.#scrollContainer);
+    Context.tilemap = new Tilemap(tileset);
+    if (!Context.tilemap.loadFromLocalStorage()) {
       this.createNewMap();
     }
 
-    scrollContainer.setContent(this.#tilemap);
+    this.#scrollContainer.setContent(Context.tilemap);
 
     // Toolbar at screen bottom
-    const toolbar = new Toolbar(window.innerWidth, toolbarHeight, {
-      tilemap: this.#tilemap,
-      viewPort,
-    });
-    toolbar.y = window.innerHeight - toolbarHeight;
-    this.container.addChild(toolbar);
+    this.#toolbar = new Toolbar(window.innerWidth, TOOLBAR_HEIGHT);
+    this.#toolbar.y = window.innerHeight - TOOLBAR_HEIGHT;
+    this.container.addChild(this.#toolbar);
 
     let contextMenu = null;
     // Replace native right click with custom menu
@@ -65,12 +64,12 @@ export class EditorScene extends BaseScene {
         contextMenu.close();
       }
       contextMenu = new ContextMenu();
-      contextMenu.addItem('New map', this.createNewMap.bind(this));
+      contextMenu.addItem('New map', EditorScene.createNewMap);
       contextMenu.addItem('Save', () => {
-        this.#tilemap.saveToLocalStorage();
+        Context.tilemap.saveToLocalStorage();
       });
       contextMenu.addItem('Save and quit', () => {
-        this.#tilemap.saveToLocalStorage();
+        Context.tilemap.saveToLocalStorage();
         game.selectScene(MainMenuScene);
       });
       contextMenu.position.set(e.pageX, e.pageY);
@@ -81,15 +80,29 @@ export class EditorScene extends BaseScene {
   /**
    * Create a new empty map
    */
-  createNewMap(size = 100) {
+  static createNewMap(size = 100) {
     const emptyMap = [];
     emptyMap.length = size * size;
     emptyMap.fill(1); // Default tile: grass
-    this.#tilemap.load(emptyMap, size, size);
+    Context.tilemap.load(emptyMap, size, size);
   }
 
-  onExit() { // override
+  // override
+  onExit() {
     // Restore native context menu
     this.game.app.view.oncontextmenu = null;
+  }
+
+  // override
+  onResize(width, height) {
+    Context.viewPort = {
+      width: width - SIDEBAR_WIDTH,
+      height: height - TOOLBAR_HEIGHT,
+    };
+
+    this.#tabs.resize(SIDEBAR_WIDTH, height - TOOLBAR_HEIGHT);
+    this.#toolbar.resize(width, TOOLBAR_HEIGHT);
+    this.#toolbar.y = height - TOOLBAR_HEIGHT;
+    this.#scrollContainer.resize(Context.viewPort.width, Context.viewPort.height);
   }
 }

@@ -15,7 +15,7 @@ export class TabContainer extends PIXI.Container {
     // Make the tab's bottom border overlap the bg's top border
     this.#bg.y = Style.buttonHeight - Style.nineBoxBorder;
     this.#bg.width = width;
-    this.#bg.height = height;
+    this.#bg.height = height - this.#bg.y;
 
     this.#tabs = []; // List of { tab, container }
     this.#activeTab = -1; // Index of active tab in #tabs array
@@ -58,5 +58,10 @@ export class TabContainer extends PIXI.Container {
 
     this.#tabs.push({ tab, content });
     this.addChild(tab);
+  }
+
+  resize(width, height) {
+    this.#bg.width = width;
+    this.#bg.height = height - this.#bg.y;
   }
 }

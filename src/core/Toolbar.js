@@ -1,8 +1,10 @@
 import * as PIXI from 'pixi.js';
 
+import { Context } from '@src/core/Context';
 import { Style } from '@src/ui/Style';
-
 import { MiniMap } from './MiniMap';
+
+const miniMapMargin = 5;
 
 export class Toolbar extends PIXI.Container {
   #bg;
@@ -11,33 +13,31 @@ export class Toolbar extends PIXI.Container {
   /**
    * @param width: content width (pixels)
    * @param height: content height (pixels)
-   * @param options.tilemap
-   * @param options.viewPort
    */
-  constructor(width, height, options) {
+  constructor(width, height) {
     super();
 
-    this.#bg = Style.createNineSlicePane(Style.textures.panel);
+    this.#bg = Style.createNineSlicePane(Style.textures.tab.panel);
     this.#bg.width = width;
     this.#bg.height = height;
 
     // Compute minimap size
-    const miniMapHeight = height - 6;
+    const miniMapHeight = height - miniMapMargin * 2;
     // Same aspect ratio that real tilemap
-    const miniMapWidth = options.tilemap.width * miniMapHeight / options.tilemap.height;
-    const ratio = miniMapWidth / options.tilemap.width;
-    this.#miniMap = new MiniMap(
-      miniMapWidth,
-      miniMapHeight,
-      options.tilemap,
-      options.viewPort,
-      ratio,
-    );
+    const miniMapWidth = Context.tilemap.width * miniMapHeight / Context.tilemap.height;
+    this.#miniMap = new MiniMap(miniMapWidth, miniMapHeight);
 
     // Align on right
-    this.#miniMap.x = this.#bg.width - miniMapWidth - 3;
-    this.#miniMap.y = 3;
+    this.#miniMap.x = this.#bg.width - miniMapWidth - miniMapMargin;
+    this.#miniMap.y = miniMapMargin;
 
     this.addChild(this.#bg, this.#miniMap);
+  }
+
+  resize(width, height) {
+    this.#bg.width = width;
+    this.#bg.height = height;
+    this.#miniMap.x = this.#bg.width - this.#miniMap.width - miniMapMargin;
+    this.#miniMap.rebuildScreenView();
   }
 }

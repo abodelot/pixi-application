@@ -41,3 +41,7 @@ window.onload = () => {
   });
   document.body.appendChild(app.view);
 };
+
+window.onresize = () => {
+  game.resizeScreen(window.innerWidth, window.innerHeight);
+};

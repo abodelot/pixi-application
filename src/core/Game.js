@@ -36,6 +36,11 @@ class Game {
     this.#app.stage.addChild(this.#currentScene.container);
   }
 
+  resizeScreen(width, height) {
+    this.#app.renderer.resize(width, height);
+    this.#currentScene.onResize(width, height);
+  }
+
   /**
    * Load assets in the 'assets' directory
    * @param assets: array of paths

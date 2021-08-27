@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 
 import { game } from './Game';
+import { Context } from './Context';
 import { Tileset } from './Tileset';
 
 /**
@@ -13,24 +14,21 @@ export class MiniMap extends PIXI.Container {
   #screenView;
   #ratio;
 
-  /**
-   * @param viewPort: dimensions of view port (ScrollContainer)
-   * @param ratio: size factor between minimap and tilemap
-   */
-  constructor(width, height, tilemap, viewPort, ratio) {
+  constructor(width, height) {
     super();
-    this.#ratio = ratio;
+    // Compute size factor between minimap and tilemap
+    this.#ratio = width / Context.tilemap.width;
 
-    this.createMiniMap(width, height, tilemap.tileIds, tilemap.nbCols, tilemap.nbRows);
+    this.createMiniMap(width, height);
 
     // Create screenView from viewPort dimensions
     this.#screenView = new PIXI.NineSlicePlane(game.getTexture('screenview-9box.png'), 3, 3, 3, 3);
-    this.#screenView.width = viewPort.width * this.#ratio;
-    this.#screenView.height = viewPort.height * this.#ratio;
+    this.#screenView.width = Context.viewPort.width * this.#ratio;
+    this.#screenView.height = Context.viewPort.height * this.#ratio;
     this.addChild(this.#screenView);
 
     // Initialize screenView position from tilemap
-    this.moveScreenView(tilemap.position);
+    this.moveScreenView(Context.tilemap.position);
 
     // Update the minimap texture when the tilemap is updated
     game.on('tilemap_updated', (args) => {
@@ -49,14 +47,13 @@ export class MiniMap extends PIXI.Container {
     });
   }
 
-  /**
-   * @param tileIds: tileIds from tilemap (as 1D array)
-   */
-  createMiniMap(width, height, tileIds, nbCols, nbRows) {
+  createMiniMap(width, height) {
+    const { tileIds, nbCols, nbRows } = Context.tilemap;
+
     // Each tile is a pixel. Each pixel is 4 uint8 (r, g, b a)
     this.#colors = new Uint8Array(4 * nbCols * nbRows);
 
-    // Fill pixel array
+    // Fill pixel array from tileIds (both are 1D array)
     for (let i = 0; i < nbCols * nbRows; ++i) {
       this.writeTile(i, tileIds[i]);
     }
@@ -105,6 +102,16 @@ export class MiniMap extends PIXI.Container {
     } else {
       this.writePixel(index, 0, 0, 0);
     }
+  }
+
+  /**
+   * Recompute ratio to tilemap and rebuild screen view.
+   * Called when window is resized.
+   */
+  rebuildScreenView() {
+    this.#ratio = this.hitArea.width / Context.tilemap.width;
+    this.#screenView.width = Context.viewPort.width * this.#ratio;
+    this.#screenView.height = Context.viewPort.height * this.#ratio;
   }
 
   writePixel(offset, r, g, b) {

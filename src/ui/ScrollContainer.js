@@ -51,6 +51,19 @@ export class ScrollContainer extends PIXI.Container {
     this.addChild(this.#content);
   }
 
+  resize(width, height) {
+    this.#box.width = width;
+    this.#box.height = height;
+
+    this.removeChild(this.mask);
+    const mask = new PIXI.Graphics();
+    mask.beginFill();
+    mask.drawRect(0, 0, width, height);
+    mask.endFill();
+    this.addChild(mask);
+    this.mask = mask;
+  }
+
   onMouseDown(event) {
     // Middle click
     if (event.data.originalEvent.button === 1) {

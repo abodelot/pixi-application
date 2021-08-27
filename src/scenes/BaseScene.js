@@ -17,10 +17,15 @@ export class BaseScene {
   get container() { return this.#container; }
   get game() { return this.#game; }
 
+  // These callbacks are meant to be overriden by child classes
+
   /**
    * Callback: before destroying the scene
    */
-  onExit() {
-    console.log('onExit:', this.constructor.name);
-  }
+  onExit() { return this; }
+
+  /**
+   * Callback: window is resized
+   */
+  onResize(/* width, height */) { return this; }
 }
