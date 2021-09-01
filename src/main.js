@@ -10,11 +10,12 @@ PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 PIXI.settings.ROUND_PIXELS = true;
 
 const assets = [
-  'ui-9box.png',
-  'shadow-9box.png',
-  'screenview-9box.png',
-  'tileset.png',
   'cursor.png',
+  'screenview-9box.png',
+  'shadow-9box.png',
+  'tileset.png',
+  'tools.png',
+  'ui-9box.png',
 ];
 
 window.onload = () => {

@@ -1,17 +1,18 @@
 import * as PIXI from 'pixi.js';
-import { TileSelectorButton } from './TileSelectorButton';
+
+import { game } from './Game';
+import { IconToggleButton } from './IconToggleButton';
 
 /**
  * Display a toggle button for each kind of tile
  */
 export class TileSelector extends PIXI.Container {
   static TILES = [
-    ['Null', 0],
-    ['Grass', 1],
-    ['Sand', 2],
-    ['Dirt', 3],
-    ['Water', 8],
-    ['Road', 40],
+    ['Grass', 0],
+    ['Dirt', 16],
+    ['Sand', 32],
+    ['Water', 48],
+    ['Road', 64],
   ];
 
   #selectedButton;
@@ -20,7 +21,11 @@ export class TileSelector extends PIXI.Container {
     super();
     const pos = { x: 16, y: 16 };
     TileSelector.TILES.forEach(([name, tileId]) => {
-      const button = new TileSelectorButton(tileset.getTileTexture(tileId), tileId, name);
+      const button = new IconToggleButton(
+        tileset.getTileTexture(tileId),
+        name,
+        { action: 'set_tile', tileId },
+      );
       button.position = pos;
       // Stack buttons vertically
       pos.y += button.height;
@@ -31,11 +36,46 @@ export class TileSelector extends PIXI.Container {
     // Select first
     this.#selectedButton = this.children[0];
     this.#selectedButton.press();
+
+    const tools = game.getTexture('tools.png');
+    const buttonMinus = new IconToggleButton(
+      new PIXI.Texture(tools, new PIXI.Rectangle(0, 0, 32, 20)),
+      'Dig',
+      { action: 'dig' },
+    );
+    buttonMinus.x = pos.x;
+    buttonMinus.y = pos.y + buttonMinus.height;
+    buttonMinus.pointertap = () => { this.onButtonClicked(buttonMinus); };
+    this.addChild(buttonMinus);
+
+    const buttonPlus = new IconToggleButton(
+      new PIXI.Texture(tools, new PIXI.Rectangle(32, 0, 32, 20)),
+      'Raise',
+      { action: 'raise' },
+    );
+    buttonPlus.x = pos.x;
+    buttonPlus.y = buttonMinus.y + buttonMinus.height;
+    buttonPlus.pointertap = () => { this.onButtonClicked(buttonPlus); };
+    this.addChild(buttonPlus);
   }
 
   onButtonClicked(button) {
     this.#selectedButton.release();
     button.press();
     this.#selectedButton = button;
+
+    switch (button.metadata.action) {
+      case 'raise':
+        game.emit('elevation_selected', 'raise');
+        break;
+      case 'dig':
+        game.emit('elevation_selected', 'dig');
+        break;
+      case 'set_tile':
+        game.emit('tile_id_selected', button.metadata.tileId);
+        break;
+      default:
+        console.error('Unsupported button metadata:', button.metadata);
+    }
   }
 }

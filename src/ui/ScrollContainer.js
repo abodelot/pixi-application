@@ -81,8 +81,8 @@ export class ScrollContainer extends PIXI.Container {
 
   moveContentTo(position) {
     // Ensure content remains inside the box boundaries
-    const x = clamp(position.x, -this.#content.width + this.#box.width, 0);
-    const y = clamp(position.y, -this.#content.height + this.#box.height, 0);
+    const x = Math.floor(clamp(position.x, -this.#content.width + this.#box.width, 0));
+    const y = Math.floor(clamp(position.y, -this.#content.height + this.#box.height, 0));
 
     this.#content.position = { x, y };
     game.emit('viewport_moved', { x, y });

@@ -6,87 +6,133 @@ export class Tileset {
   // Value: The road tile ID
 
   static RoadNeighbors = {
-    '0010': 64,
-    '1000': 65,
-    '0001': 66,
-    '0100': 67,
-    '0011': 40,
-    '1100': 41,
-    '0000': 42,
-    '1111': 43,
-    '0101': 48,
-    '1010': 49,
-    '0110': 50,
-    '1001': 51,
-    '0111': 56,
-    '1101': 57,
-    '1011': 58,
-    '1110': 59,
+  // ↑→↓← (clockwise)
+    '0101': 64,
+    '1010': 65,
+    '0000': 66,
+    '1111': 67,
+    '0110': 68,
+    '1001': 69,
+    '0011': 70,
+    '1100': 71,
+    '0111': 72,
+    '1110': 73,
+    '1101': 74,
+    '1011': 75,
+    '0001': 76,
+    '1000': 77,
+    '0100': 78,
+    '0010': 79,
   };
 
   static WaterNeighbors = {
-  // ↑↓←→
-    '1111': 8,
-    '0000': 9,
-    '0011': 10,
-    '1100': 11,
-    '0001': 32,
-    '0100': 33,
-    '1000': 34,
-    '0010': 35,
-    '1001': 24,
-    '0110': 25,
-    '0101': 26,
-    '1010': 27,
-    '1101': 16,
-    '0111': 17,
-    '1011': 18,
-    '1110': 19,
+    '1111': 48,
+    '0000': 49,
+    '0101': 50,
+    '1010': 51,
+    '1110': 52,
+    '0111': 53,
+    '1101': 54,
+    '1011': 55,
+    '1100': 56,
+    '0011': 57,
+    '0110': 58,
+    '1001': 59,
+    '0100': 60,
+    '0010': 61,
+    '1000': 62,
+    '0001': 63,
   };
 
   #texture;
   #tileWidth;
   #tileHeight;
+  #tileThickness;
   #cols;
   #rows;
+  // Use an internal canvas for extracting pixel values
+  #canvasElem;
+  #canvasCtx;
 
-  constructor(texture, tileWidth, tileHeight) {
+  constructor(texture, tileWidth, tileHeight, tileThickness) {
     this.#texture = texture;
     this.#tileWidth = tileWidth;
     this.#tileHeight = tileHeight;
+    this.#tileThickness = tileThickness;
 
     // Compute number of tile rows and cols in the tileset
     this.#cols = texture.baseTexture.width / tileWidth;
     this.#rows = texture.baseTexture.height / tileHeight;
+
+    this.buildCanvas();
   }
 
   get texture() { return this.#texture; }
   get tileWidth() { return this.#tileWidth; }
   get tileHeight() { return this.#tileHeight; }
+  get tileThickness() { return this.#tileThickness; }
+
+  /**
+   * Build an internal canvas object, which contains the tileset image
+   */
+  buildCanvas() {
+    const img = this.#texture.baseTexture.resource.source;
+    this.#canvasElem = document.createElement('canvas');
+    this.#canvasCtx = this.#canvasElem.getContext('2d');
+    this.#canvasCtx.drawImage(img, 0, 0);
+  }
 
   /**
    * Get a PIXI Texture with the bounding rect for the given tileId
    */
-  getTileTexture(tileId) {
-    if (tileId >= 0 && tileId < (this.#cols * this.#rows)) {
-      const i = tileId % this.#cols;
-      const j = Math.floor(tileId / this.#cols);
-      return new PIXI.Texture(
-        this.#texture.baseTexture,
-        new PIXI.Rectangle(
-          i * this.#tileWidth, j * this.#tileHeight,
-          this.#tileWidth, this.#tileHeight,
-        ),
-      );
+  getTileTexture(tileId, elevation = 0) {
+    // May switch to another tile to represent elevation
+    if (tileId === 0 || tileId === 16 || tileId === 32) {
+      tileId += elevation;
     }
-    throw Error(`unsupported tileId: ${tileId}`);
+    return new PIXI.Texture(this.#texture.baseTexture, this.getTileRect(tileId));
   }
 
   /**
    * Convert (i, j) coords in the tileset to tile id
+   * @return int
    */
   coordsToTileId(i, j) {
     return j * this.#cols + i;
+  }
+
+  /**
+   * Get the bounding rect in the tileset image
+   * @return PIXI.Rectangle
+   */
+  getTileRect(tileId) {
+    if (tileId >= 0 && tileId < (this.#cols * this.#rows)) {
+      const i = tileId % this.#cols;
+      const j = Math.floor(tileId / this.#cols);
+      const fullHeight = this.#tileHeight + this.#tileThickness;
+      return new PIXI.Rectangle(
+        i * this.#tileWidth, j * fullHeight,
+        this.#tileWidth, fullHeight,
+      );
+    }
+    throw Error(`tileId out of tileset range: ${tileId}`);
+  }
+
+  /**
+   * Get color of given tile, by reading 1 pixel
+   * @return { r, g, b }
+   */
+  getTileColor(tileId) {
+    const rect = this.getTileRect(tileId);
+    // Extract 1 pixel at the center of the tile
+    const x = rect.x + this.#tileWidth / 2;
+    const y = rect.y + this.#tileHeight / 2;
+    const pixel = this.#canvasCtx.getImageData(x, y, 1, 1);
+    return {
+      r: pixel.data[0],
+      g: pixel.data[1],
+      b: pixel.data[2],
+    };
   }
 
   static isRoad(tileId) {

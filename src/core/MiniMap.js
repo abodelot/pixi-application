@@ -2,7 +2,6 @@ import * as PIXI from 'pixi.js';
 
 import { game } from './Game';
 import { Context } from './Context';
-import { Tileset } from './Tileset';
 
 /**
  * Display a replica of the tilemap in a small image
@@ -89,19 +88,8 @@ export class MiniMap extends PIXI.Container {
   writeTile(index, tileId) {
     index *= 4;
     // Map tileId to a color
-    if (tileId === 1) {
-      this.writePixel(index, 76, 172, 134);
-    } else if (tileId === 2) {
-      this.writePixel(index, 231, 224, 136);
-    } else if (tileId === 3) {
-      this.writePixel(index, 154, 134, 69);
-    } else if (Tileset.isWater(tileId)) {
-      this.writePixel(index, 74, 120, 218);
-    } else if (Tileset.isRoad(tileId)) {
-      this.writePixel(index, 51, 51, 51);
-    } else {
-      this.writePixel(index, 0, 0, 0);
-    }
+    const color = Context.tilemap.tileset.getTileColor(tileId);
+    this.writePixel(index, color.r, color.g, color.b);
   }
 
   /**

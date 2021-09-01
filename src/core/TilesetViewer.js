@@ -22,7 +22,10 @@ export class TilesetViewer extends PIXI.Container {
     this.sprite.y = this.#label.height + 10;
     this.addChild(this.sprite);
 
-    const transparentTile = game.getTexture('cursor.png');
+    const transparentTile = new PIXI.Texture(
+      game.getTexture('cursor.png'),
+      new PIXI.Rectangle(0, 0, 32, 17),
+    );
     this.#cursorTile = new PIXI.Sprite(transparentTile);
     this.sprite.addChild(this.#cursorTile);
 
@@ -38,9 +41,10 @@ export class TilesetViewer extends PIXI.Container {
   onMouseMove(event) {
     // Constraint (x, y) to be a multiple of (tileWidth, tileHeight),
     // so 'cursorTile' sprite is positioned exactly over a tile
+    const th = this.#tileset.tileHeight + this.#tileset.tileThickness;
     const position = event.data.getLocalPosition(this.sprite);
     const x = Math.floor(position.x / this.#tileset.tileWidth) * this.#tileset.tileWidth;
-    const y = Math.floor(position.y / this.#tileset.tileHeight) * this.#tileset.tileHeight;
+    const y = Math.floor(position.y / th) * th;
 
     // Check position is over spritesheet
     if (x >= 0 && y >= 0 && x < this.sprite.width && y < this.sprite.height) {
@@ -53,7 +57,7 @@ export class TilesetViewer extends PIXI.Container {
     // Convert mouse position to tile coords
     const position = event.data.getLocalPosition(this.sprite);
     const i = Math.floor(position.x / this.#tileset.tileWidth);
-    const j = Math.floor(position.y / this.#tileset.tileHeight);
+    const j = Math.floor(position.y / (this.#tileset.tileHeight + this.#tileset.tileThickness));
 
     const tileId = this.#tileset.coordsToTileId(i, j);
     this.#label.text = `Selected tile: ${tileId}`;

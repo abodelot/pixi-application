@@ -28,7 +28,7 @@ export class EditorScene extends BaseScene {
     this.#tabs = new TabContainer(SIDEBAR_WIDTH, window.innerHeight - TOOLBAR_HEIGHT);
     this.container.addChild(this.#tabs);
 
-    const tileset = new Tileset(game.getTexture('tileset.png'), 32, 16);
+    const tileset = new Tileset(game.getTexture('tileset.png'), 32, 16, 4);
     this.#tabs.addTab('Terrain', new TileSelector(tileset));
     this.#tabs.addTab('Tileset', new TilesetViewer(tileset));
     this.#tabs.addTab('Items', new PIXI.Text('Content of tab 3'));
@@ -44,7 +44,7 @@ export class EditorScene extends BaseScene {
     this.container.addChild(this.#scrollContainer);
     Context.tilemap = new Tilemap(tileset);
     if (!Context.tilemap.loadFromLocalStorage()) {
-      this.createNewMap();
+      EditorScene.createNewMap();
     }
 
     this.#scrollContainer.setContent(Context.tilemap);
@@ -83,8 +83,11 @@ export class EditorScene extends BaseScene {
   static createNewMap(size = 100) {
     const emptyMap = [];
     emptyMap.length = size * size;
-    emptyMap.fill(1); // Default tile: grass
-    Context.tilemap.load(emptyMap, size, size);
+    emptyMap.fill(0); // Default tile: grass
+    const elevations = [];
+    elevations.length = size * size;
+    elevations.fill(0);
+    Context.tilemap.load(emptyMap, elevations, size, size);
   }
 
   // override
