@@ -1,7 +1,11 @@
 import * as PIXI from 'pixi.js';
 
 import { game } from '@src/core/Game';
+import { Context } from '@src/core/Context';
 import { clamp } from '@src/core/Utils';
+
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 10;
 
 /**
  * Container with a clipping mask for scolling content
@@ -9,6 +13,7 @@ import { clamp } from '@src/core/Utils';
 export class ScrollContainer extends PIXI.Container {
   #box;
   #content;
+  #zoomFactor; // Size multiplicator applied to content
 
   /**
    * @param viewWidth: viewport width (pixels)
@@ -37,9 +42,13 @@ export class ScrollContainer extends PIXI.Container {
     this.addChild(mask);
     this.mask = mask;
 
+    this.#zoomFactor = 1;
+
     game.on('minimap_clicked', (position) => {
       this.moveContentTo(position);
     });
+
+    game.app.view.addEventListener('mousewheel', this.onMouseWheel.bind(this), { passive: false });
   }
 
   setContent(element) {
@@ -76,6 +85,41 @@ export class ScrollContainer extends PIXI.Container {
 
       // Apply delta and move content
       this.moveContentTo({ x: this.#content.x - dx, y: this.#content.y - dy });
+    }
+  }
+
+  onMouseWheel(event) {
+    const pos = { x: event.offsetX, y: event.offsetY };
+    // Check that mouse is still over container
+    const target = game.app.renderer.plugins.interaction.hitTest(pos);
+    if (target === this.#content) {
+      const mouse = this.toLocal(pos);
+      if (event.deltaY > 0 && this.#zoomFactor > ZOOM_MIN) {
+        this.#zoomFactor--;
+      } else if (event.deltaY < 0 && this.#zoomFactor < ZOOM_MAX) {
+        this.#zoomFactor++;
+      } else {
+        return;
+      }
+
+      // Mouse position, relative to the content
+      const dx = mouse.x - this.#content.x;
+      const dy = mouse.y - this.#content.y;
+      const oldSize = this.#content.width;
+
+      // Resize content
+      this.#content.width = this.#content.pixelWidth * this.#zoomFactor;
+      this.#content.height = this.#content.pixelHeight * this.#zoomFactor;
+
+      // Adjust content position, so mouse is still hovering the same place
+      const newSize = this.#content.width;
+      const ratio = newSize / oldSize;
+      this.#content.x = -(dx * ratio) + mouse.x;
+      this.#content.y = -(dy * ratio) + mouse.y;
+
+      // Refresh minimap
+      Context.miniMap.rebuildScreenView();
+      Context.miniMap.moveScreenView(this.#content.position);
     }
   }
 

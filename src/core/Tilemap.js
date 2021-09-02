@@ -96,7 +96,6 @@ export class Tilemap extends PIXI.Container {
       }
     }
 
-    this.setScale(2);
     this.#cursor.position = this.coordsToPixels(0, 0);
   }
 
@@ -305,11 +304,6 @@ export class Tilemap extends PIXI.Container {
     if (event.data.button === 0) {
       this.applyToolOnHoveredTile();
     }
-  }
-
-  setScale(ratio) {
-    this.width = this.pixelWidth * ratio;
-    this.height = this.pixelHeight * ratio;
   }
 
   setTileAt(i, j, tileId) {

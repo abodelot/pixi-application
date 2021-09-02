@@ -26,6 +26,7 @@ export class Toolbar extends PIXI.Container {
     // Same aspect ratio that real tilemap
     const miniMapWidth = Context.tilemap.width * miniMapHeight / Context.tilemap.height;
     this.#miniMap = new MiniMap(miniMapWidth, miniMapHeight);
+    Context.miniMap = this.#miniMap;
 
     // Align on right
     this.#miniMap.x = this.#bg.width - miniMapWidth - miniMapMargin;

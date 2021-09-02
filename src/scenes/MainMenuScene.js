@@ -17,7 +17,8 @@ export class MainMenuScene extends BaseScene {
       const box = new MessageBox(
         'Left click: put tile\n'
         + 'Middle click: center view on cursor\n'
-        + 'Right click: show editor menu',
+        + 'Right click: show editor menu\n'
+        + 'Mouse wheel: zoom in/zoom out map',
       );
       box.position.set(30, 30);
       box.onOk(() => {
