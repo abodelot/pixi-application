@@ -44,12 +44,18 @@ export class Tileset {
     '0001': 63,
   };
 
+  static GrassBase = 0;
+  static DirtBase = 16;
+  static SandBase = 32;
+  static WaterBase = 48;
+
   #texture;
   #tileWidth;
   #tileHeight;
   #tileThickness;
   #cols;
   #rows;
+  #textureCache;
   // Use an internal canvas for extracting pixel values
   #canvasElem;
   #canvasCtx;
@@ -64,6 +70,7 @@ export class Tileset {
     this.#cols = texture.baseTexture.width / tileWidth;
     this.#rows = texture.baseTexture.height / tileHeight;
 
+    this.#textureCache = {};
     this.buildCanvas();
   }
 
@@ -83,14 +90,36 @@ export class Tileset {
   }
 
   /**
-   * Get a PIXI Texture with the bounding rect for the given tileId
+   * @return {int} tileId
    */
-  getTileTexture(tileId, elevation = 0) {
-    // May switch to another tile to represent elevation
-    if (tileId === 0 || tileId === 16 || tileId === 32) {
-      tileId += elevation;
+  static getElevatedTileId(tileId, elevation) {
+    // Switch to another tile ID, representing the same base with elevation
+    if (tileId < (Tileset.GrassBase + 16)) {
+      return Tileset.GrassBase + elevation;
     }
-    return new PIXI.Texture(this.#texture.baseTexture, this.getTileRect(tileId));
+    if (tileId < (Tileset.DirtBase + 16)) {
+      return Tileset.DirtBase + elevation;
+    }
+    if (tileId < (Tileset.SandBase + 16)) {
+      return Tileset.SandBase + elevation;
+    }
+    // Otherwise, tileId has no elevated version in the tileset
+    return tileId;
+  }
+
+  /**
+   * Get a PIXI Texture with the bounding rect for the given tileId
+   * @return PIXI.Texture
+   */
+  getTileTexture(tileId) {
+    if (this.#textureCache[tileId]) {
+      // Cache hit
+      return this.#textureCache[tileId];
+    }
+    // Cache miss
+    const texture = new PIXI.Texture(this.#texture.baseTexture, this.getTileRect(tileId));
+    this.#textureCache[tileId] = texture;
+    return texture;
   }
 
   /**

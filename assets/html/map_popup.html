@@ -1,0 +1,28 @@
+<div class="popup">
+  <div class="popup-header">Map generation</div>
+  <form name="mapForm">
+    <div class="row">
+      <label>Function</label>
+      <select name="functionName">
+        <option value="simplex">Simplex</option>
+        <option value="perlin">Perlin</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Scale</label>
+      <input name="scale" type="number" value="80" min="1" max="100" step="1">
+    </div>
+    <div class="row">
+      <label>Min noise value [0:1]</label>
+      <input name="minNoise" type="number" value="0" min="0" max="1" step="0.01">
+    </div>
+    <div class="row">
+      <label>Max noise value [0:1]</label>
+      <input name="maxNoise" type="number" value="1" min="0" max="1" step="0.01">
+    </div>
+    <div class="popup-footer">
+      <button type="button" onclick="mapPopupOnCancel()">Cancel</button>
+      <button type="button" onclick="mapPopupOnSubmit()">Generate</button>
+    </div>
+  </form>
+</div>

@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { game } from './Game';
 import { Tileset } from './Tileset';
 
-const MAX_ELEVATION = 15;
+export const MAX_ELEVATION = 15;
 
 export class Tilemap extends PIXI.Container {
   #background;
@@ -71,7 +71,11 @@ export class Tilemap extends PIXI.Container {
   get tileset() { return this.#tileset; }
 
   /**
-   * Load a tilemap from an array of tile ids
+   * Load a tilemap
+   * @param {array} tileIds: Array of ids, sized cols*rows
+   * @param {array} tileElevations: Array of elevations, sized cols*rows
+   * @param {int} cols: number of cols
+   * @param {int} rows: number of rows
    */
   load(tileIds, tileElevations, cols, rows) {
     this.#cols = cols;
@@ -87,16 +91,9 @@ export class Tilemap extends PIXI.Container {
     this.#background.width = this.pixelWidth;
     this.#background.height = this.pixelHeight;
 
-    // Draw all the tiles inside tileGraphics object
-    this.#tileGraphics.clear();
-    for (let j = 0; j < rows; ++j) {
-      for (let i = 0; i < cols; ++i) {
-        const index = j * cols + i;
-        this.drawTile(i, j, tileIds[index], tileElevations[index]);
-      }
-    }
-
-    this.#cursor.position = this.coordsToPixels(0, 0);
+    this.putSpecialTiles();
+    this.redrawTilemap();
+    this.refreshPointerSelection();
   }
 
   /**
@@ -106,7 +103,7 @@ export class Tilemap extends PIXI.Container {
     this.#tileGraphics.clear();
     for (let j = 0; j < this.#rows; ++j) {
       for (let i = 0; i < this.#cols; ++i) {
-        const index = this.coordsToIndex(i, j);
+        const index = j * this.#cols + i;
         this.drawTile(i, j, this.#tileIds[index], this.#tileElevations[index]);
       }
     }
@@ -119,7 +116,7 @@ export class Tilemap extends PIXI.Container {
     // Move tile 'upwards' to apply elevation
     pos.y -= this.#tileset.tileThickness * elevation;
 
-    const tileTexture = this.#tileset.getTileTexture(tileId, elevation);
+    const tileTexture = this.#tileset.getTileTexture(tileId);
     this.#tileGraphics.beginTextureFill({
       texture: tileTexture,
       matrix: new PIXI.Matrix().translate(pos.x, pos.y),
@@ -223,7 +220,10 @@ export class Tilemap extends PIXI.Container {
    * Convert 2D coords to 1D index
    */
   coordsToIndex(i, j) {
-    return j * this.#cols + i;
+    if (i >= 0 && i < this.#cols && j >= 0 && j < this.#rows) {
+      return j * this.#cols + i;
+    }
+    return -1;
   }
 
   onMouseMove(event) {
@@ -299,6 +299,12 @@ export class Tilemap extends PIXI.Container {
     return false;
   }
 
+  refreshPointerSelection() {
+    // Fetch mouse position, and recompute which tile is hovered
+    const pos = this.toLocal(game.app.renderer.plugins.interaction.mouse.global);
+    this.selectTileAtPosition(pos.x, pos.y, true);
+  }
+
   onMouseDown(event) {
     // Left click
     if (event.data.button === 0) {
@@ -307,28 +313,28 @@ export class Tilemap extends PIXI.Container {
   }
 
   setTileAt(i, j, tileId) {
-    if (i >= 0 && i < this.#cols && j >= 0 && j < this.#rows) {
-      const index = this.coordsToIndex(i, j);
+    const index = this.coordsToIndex(i, j);
+    if (index !== -1) {
+      tileId = Tileset.getElevatedTileId(tileId, this.#tileElevations[index]);
       if (this.#tileIds[index] !== tileId) {
-        // Update tileIds array and redraw tilemap
         this.#tileIds[index] = tileId;
-        this.redrawTilemap();
-
         game.emit('tilemap_updated', { index, tileId });
       }
     }
   }
 
   getTileAt(i, j) {
-    if (i >= 0 && i < this.#cols && j >= 0 && j < this.#rows) {
-      return this.#tileIds[this.coordsToIndex(i, j)];
+    const index = this.coordsToIndex(i, j);
+    if (index !== -1) {
+      return this.#tileIds[index];
     }
     return null;
   }
 
   getElevationAt(i, j) {
-    if (i >= 0 && i < this.#cols && j >= 0 && j < this.#rows) {
-      return this.#tileElevations[this.coordsToIndex(i, j)];
+    const index = this.coordsToIndex(i, j);
+    if (index !== -1) {
+      return this.#tileElevations[index];
     }
     return null;
   }
@@ -387,16 +393,16 @@ export class Tilemap extends PIXI.Container {
   updateTileElevationAt(i, j, direction) {
     const index = this.coordsToIndex(i, j);
     const visited = new Set();
-    if (direction === 'raise' && this.#tileElevations[index] < MAX_ELEVATION) {
-      this.normalizeElevation(i, j, this.#tileElevations[index] + 1, 1, visited);
-    } else if (direction === 'dig' && this.#tileElevations[index] > 0) {
-      this.normalizeElevation(i, j, this.#tileElevations[index] - 1, -1, visited);
+    const elevation = this.#tileElevations[index];
+    if (direction === 'raise' && elevation < MAX_ELEVATION) {
+      this.normalizeElevation(i, j, elevation + 1, 1, visited);
+    } else if (direction === 'dig' && elevation > 0) {
+      this.normalizeElevation(i, j, elevation - 1, -1, visited);
     }
 
-    this.redrawTilemap();
-    // Refresh cursor selection: cursor could be hovering a different now!
-    const pos = this.toLocal(game.app.renderer.plugins.interaction.mouse.global);
-    this.selectTileAtPosition(pos.x, pos.y, true);
+    // Refresh cursor selection: map geometry has changed and cursor could be
+    // now hovering a different tile than before!
+    this.refreshPointerSelection();
   }
 
   /**
@@ -408,11 +414,8 @@ export class Tilemap extends PIXI.Container {
    * @param visited: Set of already visited tile index
    */
   normalizeElevation(i, j, zLimit, dir, visited) {
-    if (i >= 0 && i < this.#cols && j >= 0 && j < this.#rows) {
-      const index = this.coordsToIndex(i, j);
-      if (visited.has(index)) {
-        return;
-      }
+    const index = this.coordsToIndex(i, j);
+    if (index !== -1 && !visited.has(index)) {
       const elevation = this.#tileElevations[index];
       if (dir === 1 && elevation < zLimit) {
         visited.add(index);
@@ -430,7 +433,11 @@ export class Tilemap extends PIXI.Container {
         this.normalizeElevation(i + 1, j, zLimit, dir, visited);
         this.normalizeElevation(i, j - 1, zLimit, dir, visited);
         this.normalizeElevation(i, j + 1, zLimit, dir, visited);
+      } else {
+        return;
       }
+      // Rewrite the tile, so elevation can be applied (different tileId)
+      this.setTileAt(i, j, this.#tileIds[index]);
     }
   }
 
@@ -469,6 +476,22 @@ export class Tilemap extends PIXI.Container {
         }
       } else if (this.#currentTool.type === 'elevation') {
         this.updateTileElevationAt(i, j, this.#currentTool.direction);
+      }
+      this.redrawTilemap();
+    }
+  }
+
+  /**
+   * Look for basic tiles and replace them with specific tiles of same kind (texture
+   * transition, etc.)
+   */
+  putSpecialTiles() {
+    for (let j = 0; j < this.#rows; ++j) {
+      for (let i = 0; i < this.#cols; ++i) {
+        const index = this.coordsToIndex(i, j);
+        if (this.#tileIds[index] === Tileset.WaterBase) {
+          this.setWaterAt(i, j);
+        }
       }
     }
   }

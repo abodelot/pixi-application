@@ -1,5 +1,7 @@
 import * as PIXI from 'pixi.js';
 
+import { Button } from '@src/ui/Button';
+import { EditorScene } from '@src/scenes/EditorScene';
 import { game } from './Game';
 import { IconToggleButton } from './IconToggleButton';
 
@@ -57,6 +59,21 @@ export class TileSelector extends PIXI.Container {
     buttonPlus.y = buttonMinus.y + buttonMinus.height;
     buttonPlus.pointertap = () => { this.onButtonClicked(buttonPlus); };
     this.addChild(buttonPlus);
+
+    const button = new Button('Random map');
+    button.pointertap = () => {
+      fetch('assets/html/map_popup.html')
+        .then((response) => response.text())
+        .then((html) => {
+          document.querySelector('#popup-wrapper').innerHTML = html;
+        });
+    };
+    document.addEventListener('map_popup_submit', (event) => {
+      EditorScene.createNewMap(event.detail);
+    });
+    button.x = pos.x;
+    button.y = pos.y + 100;
+    this.addChild(button);
   }
 
   onButtonClicked(button) {

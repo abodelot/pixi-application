@@ -1,15 +1,16 @@
 import * as PIXI from 'pixi.js';
 
 import { Tileset } from '@src/core/Tileset';
-import { Tilemap } from '@src/core/Tilemap';
+import { Tilemap, MAX_ELEVATION } from '@src/core/Tilemap';
 import { TileSelector } from '@src/core/TileSelector';
 import { TilesetViewer } from '@src/core/TilesetViewer';
 import { Context } from '@src/core/Context';
 import { Toolbar } from '@src/core/Toolbar';
-
+import { clamp, normalize } from '@src/core/Utils';
 import { ContextMenu } from '@src/ui/ContextMenu';
 import { ScrollContainer } from '@src/ui/ScrollContainer';
 import { TabContainer } from '@src/ui/TabContainer';
+import { Perlin } from '@src/vendor/PerlinNoise';
 
 import { BaseScene } from './BaseScene';
 import { MainMenuScene } from './MainMenuScene';
@@ -78,16 +79,51 @@ export class EditorScene extends BaseScene {
   }
 
   /**
-   * Create a new empty map
+   * Create a new random map
+   * @param size: map size (nb tiles = size*size)
+   * @param scale: Noise scale (= size of variations in elevations)
+   * @param minNoise: generated noise < minNoise will be converted to minNoise
+   * @param maxNoise: generated noise > maxNoise will be converted to maxNoise
+   * @param functionName: simplex|perlin
    */
-  static createNewMap(size = 100) {
-    const emptyMap = [];
-    emptyMap.length = size * size;
-    emptyMap.fill(0); // Default tile: grass
+  static createNewMap({
+    size = 100, scale = 80, minNoise = 0, maxNoise = 1, functionName = 'simplex',
+  } = {}) {
+    const tileIds = [];
+    tileIds.length = size * size;
+    tileIds.fill(0); // Default tileId=0 (grass)
     const elevations = [];
     elevations.length = size * size;
     elevations.fill(0);
-    Context.tilemap.load(emptyMap, elevations, size, size);
+    const perlin = new Perlin(functionName);
+
+    for (let i = 0; i < size; ++i) {
+      for (let j = 0; j < size; ++j) {
+        const index = i * size + j;
+        // Generate noise for each cell
+        let n = perlin.noise(i / scale, j / scale, 0);
+        n = clamp(n, minNoise, maxNoise);
+        // Convert noise to tile id + elevation
+        let tid = 0;
+        let tz = 0;
+        // Reserve the [0:0.35] range to water and sand
+        if (n < 0.3) {
+          tid = Tileset.WaterBase;
+        } else if (n < 0.35) {
+          tid = Tileset.SandBase;
+        } else {
+          // Map the remaining noise range [0.35:1] to elevation
+          tz = Math.floor(normalize(n, 0.35, 1, 0, MAX_ELEVATION));
+        }
+        elevations[index] = tz;
+        tileIds[index] = Tileset.getElevatedTileId(tid, tz);
+      }
+    }
+
+    Context.tilemap.load(tileIds, elevations, size, size);
+    if (Context.miniMap) {
+      Context.miniMap.rebuildMiniMap();
+    }
   }
 
   // override

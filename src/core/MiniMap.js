@@ -48,12 +48,13 @@ export class MiniMap extends PIXI.Container {
 
   createMiniMap(width, height) {
     const { tileIds, nbCols, nbRows } = Context.tilemap;
+    const size = nbCols * nbRows;
 
     // Each tile is a pixel. Each pixel is 4 uint8 (r, g, b a)
-    this.#colors = new Uint8Array(4 * nbCols * nbRows);
+    this.#colors = new Uint8Array(4 * size);
 
     // Fill pixel array from tileIds (both are 1D array)
-    for (let i = 0; i < nbCols * nbRows; ++i) {
+    for (let i = 0; i < size; ++i) {
       this.writeTile(i, tileIds[i]);
     }
 
@@ -82,14 +83,13 @@ export class MiniMap extends PIXI.Container {
     this.addChild(wrapper);
   }
 
-  /**
-   * @param index: tile index in the tilemap (as 1D array)
-   */
-  writeTile(index, tileId) {
-    index *= 4;
-    // Map tileId to a color
-    const color = Context.tilemap.tileset.getTileColor(tileId);
-    this.writePixel(index, color.r, color.g, color.b);
+  rebuildMiniMap() {
+    const { tileIds, nbCols, nbRows } = Context.tilemap;
+    const size = nbCols * nbRows;
+    for (let i = 0; i < size; ++i) {
+      this.writeTile(i, tileIds[i]);
+    }
+    this.#texture.update();
   }
 
   /**
@@ -100,6 +100,16 @@ export class MiniMap extends PIXI.Container {
     this.#ratio = this.hitArea.width / Context.tilemap.width;
     this.#screenView.width = Context.viewPort.width * this.#ratio;
     this.#screenView.height = Context.viewPort.height * this.#ratio;
+  }
+
+  /**
+   * @param index: tile index in the tilemap (as 1D array)
+   */
+  writeTile(index, tileId) {
+    index *= 4;
+    // Map tileId to a color
+    const color = Context.tilemap.tileset.getTileColor(tileId);
+    this.writePixel(index, color.r, color.g, color.b);
   }
 
   writePixel(offset, r, g, b) {
