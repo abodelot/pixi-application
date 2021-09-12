@@ -14,7 +14,7 @@ export class TilesetViewer extends PIXI.Container {
   constructor(tileset) {
     super();
     this.#tileset = tileset;
-    this.#label = new PIXI.Text('Selected tile: 0', { fontSize: 16 });
+    this.#label = new PIXI.Text('Selected tile: N/A', { fontSize: 14 });
     this.addChild(this.#label);
 
     // Use a sprite to display the tileset texture
@@ -60,12 +60,7 @@ export class TilesetViewer extends PIXI.Container {
     const j = Math.floor(position.y / (this.#tileset.tileHeight + this.#tileset.tileThickness));
 
     const tileId = this.#tileset.coordsToTileId(i, j);
-    this.#label.text = `Selected tile: ${tileId}`;
-    if (Tileset.isWater(tileId)) {
-      this.#label.text += ' (Water)';
-    } else if (Tileset.isRoad(tileId)) {
-      this.#label.text += ' (Road)';
-    }
+    this.#label.text = `Selected tile: ${tileId} (${Tileset.tileDesc(tileId)})`;
     this.#selectedTile.position = this.#cursorTile.position;
 
     game.emit('tile_id_selected', tileId);

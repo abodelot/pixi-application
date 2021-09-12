@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 
 import { Button } from '@src/ui/Button';
 import { EditorScene } from '@src/scenes/EditorScene';
+import { Tileset } from './Tileset';
 import { game } from './Game';
 import { IconToggleButton } from './IconToggleButton';
 
@@ -10,10 +11,10 @@ import { IconToggleButton } from './IconToggleButton';
  */
 export class TileSelector extends PIXI.Container {
   static TILES = [
-    ['Grass', 0],
-    ['Dirt', 16],
-    ['Sand', 32],
-    ['Water', 48],
+    ['Grass', Tileset.GrassBase],
+    ['Dirt', Tileset.DirtBase],
+    ['Sand', Tileset.SandBase],
+    ['Water', Tileset.WaterBase],
     ['Road', 64],
   ];
 

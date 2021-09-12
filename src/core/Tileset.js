@@ -1,5 +1,7 @@
 import * as PIXI from 'pixi.js';
 
+export const MAX_ELEVATION = 15;
+
 export class Tileset {
   // Key: 4 booleans, encoded as 0|1 string. Each bool value indicates if the tile
   // connects to another road tile, for each direction: Up, Down, Left, Right
@@ -94,13 +96,13 @@ export class Tileset {
    */
   static getElevatedTileId(tileId, elevation) {
     // Switch to another tile ID, representing the same base with elevation
-    if (tileId < (Tileset.GrassBase + 16)) {
+    if (tileId <= (Tileset.GrassBase + MAX_ELEVATION)) {
       return Tileset.GrassBase + elevation;
     }
-    if (tileId < (Tileset.DirtBase + 16)) {
+    if (tileId <= (Tileset.DirtBase + MAX_ELEVATION)) {
       return Tileset.DirtBase + elevation;
     }
-    if (tileId < (Tileset.SandBase + 16)) {
+    if (tileId <= (Tileset.SandBase + MAX_ELEVATION)) {
       return Tileset.SandBase + elevation;
     }
     // Otherwise, tileId has no elevated version in the tileset
@@ -170,5 +172,14 @@ export class Tileset {
 
   static isWater(tileId) {
     return Object.values(Tileset.WaterNeighbors).includes(tileId);
+  }
+
+  static tileDesc(tileId) {
+    if (Tileset.isRoad(tileId)) return 'road';
+    if (Tileset.isWater(tileId)) return 'water';
+    if (tileId >= Tileset.GrassBase && tileId <= Tileset.GrassBase + MAX_ELEVATION) return 'grass';
+    if (tileId >= Tileset.DirtBase && tileId <= Tileset.DirtBase + MAX_ELEVATION) return 'dirt';
+    if (tileId >= Tileset.SandBase && tileId <= Tileset.SandBase + MAX_ELEVATION) return 'sand';
+    return '?';
   }
 }

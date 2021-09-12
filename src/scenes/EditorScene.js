@@ -1,9 +1,10 @@
 import * as PIXI from 'pixi.js';
 
-import { Tileset } from '@src/core/Tileset';
-import { Tilemap, MAX_ELEVATION } from '@src/core/Tilemap';
+import { Tileset, MAX_ELEVATION } from '@src/core/Tileset';
+import { Tilemap } from '@src/core/Tilemap';
 import { TileSelector } from '@src/core/TileSelector';
 import { TilesetViewer } from '@src/core/TilesetViewer';
+import { DebugBox } from '@src/core/DebugBox';
 import { Context } from '@src/core/Context';
 import { Toolbar } from '@src/core/Toolbar';
 import { clamp, normalize } from '@src/core/Utils';
@@ -54,6 +55,11 @@ export class EditorScene extends BaseScene {
     this.#toolbar = new Toolbar(window.innerWidth, TOOLBAR_HEIGHT);
     this.#toolbar.y = window.innerHeight - TOOLBAR_HEIGHT;
     this.container.addChild(this.#toolbar);
+
+    const debugBox = new DebugBox();
+    debugBox.x = window.innerWidth - debugBox.width - 10;
+    debugBox.y = 10;
+    this.container.addChild(debugBox);
 
     let contextMenu = null;
     // Replace native right click with custom menu

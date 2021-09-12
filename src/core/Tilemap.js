@@ -1,8 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { game } from './Game';
-import { Tileset } from './Tileset';
-
-export const MAX_ELEVATION = 15;
+import { Tileset, MAX_ELEVATION } from './Tileset';
 
 export class Tilemap extends PIXI.Container {
   #background;
@@ -247,6 +245,7 @@ export class Tilemap extends PIXI.Container {
       if (res == null) {
         this.#hoveredTile = null;
         this.#cursor.visible = false;
+        game.emit('tile_pointed', null);
         return false;
       }
       const { i, j, elevation } = res;
@@ -291,11 +290,16 @@ export class Tilemap extends PIXI.Container {
         }
 
         this.#cursor.visible = true;
+        const tileId = this.tileIds[this.coordsToIndex(i, j)];
+        game.emit('tile_pointed', {
+          tileId, tileDesc: Tileset.tileDesc(tileId), elevation, i, j,
+        });
         return true;
       }
       this.#hoveredTile = null;
       this.#cursor.visible = false;
     }
+    game.emit('tile_pointed', null);
     return false;
   }
 
