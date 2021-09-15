@@ -182,4 +182,8 @@ export class Tileset {
     if (tileId >= Tileset.SandBase && tileId <= Tileset.SandBase + MAX_ELEVATION) return 'sand';
     return '?';
   }
+
+  static isConstructible(tileId) {
+    return !Tileset.isRoad(tileId) && !Tileset.isWater(tileId);
+  }
 }

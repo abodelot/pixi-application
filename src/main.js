@@ -26,9 +26,6 @@ window.onload = () => {
     backgroundColor: 0xb8b8b8,
   });
 
-  // Do not track mousemove outside of the listener's container
-  app.renderer.plugins.interaction.moveWhenInside = true;
-
   game.initialize(app);
   game.loadAssets(assets, () => {
     console.log('assets loaded');

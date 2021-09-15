@@ -34,11 +34,11 @@ export class TilesetViewer extends PIXI.Container {
     this.sprite.addChild(this.#selectedTile);
 
     this.sprite.interactive = true;
-    this.sprite.on('pointermove', this.onMouseMove.bind(this));
-    this.sprite.on('pointerdown', this.onMouseDown.bind(this));
+    this.sprite.on('pointermove', this.onPointerMove.bind(this));
+    this.sprite.on('pointerdown', this.onPointerDown.bind(this));
   }
 
-  onMouseMove(event) {
+  onPointerMove(event) {
     // Constraint (x, y) to be a multiple of (tileWidth, tileHeight),
     // so 'cursorTile' sprite is positioned exactly over a tile
     const th = this.#tileset.tileHeight + this.#tileset.tileThickness;
@@ -53,7 +53,7 @@ export class TilesetViewer extends PIXI.Container {
     }
   }
 
-  onMouseDown(event) {
+  onPointerDown(event) {
     // Convert mouse position to tile coords
     const position = event.data.getLocalPosition(this.sprite);
     const i = Math.floor(position.x / this.#tileset.tileWidth);
@@ -62,7 +62,5 @@ export class TilesetViewer extends PIXI.Container {
     const tileId = this.#tileset.coordsToTileId(i, j);
     this.#label.text = `Selected tile: ${tileId} (${Tileset.tileDesc(tileId)})`;
     this.#selectedTile.position = this.#cursorTile.position;
-
-    game.emit('tile_id_selected', tileId);
   }
 }

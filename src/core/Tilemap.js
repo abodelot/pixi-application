@@ -2,18 +2,23 @@ import * as PIXI from 'pixi.js';
 import { game } from './Game';
 import { Tileset, MAX_ELEVATION } from './Tileset';
 
+import { TilemapActionElevation } from './TilemapActionElevation';
+import { TilemapActionRoad } from './TilemapActionRoad';
+import { TilemapActionTilePainter } from './TilemapActionTilePainter';
+
 export class Tilemap extends PIXI.Container {
   #background;
   #cols;
   #rows;
   #tileIds;
   #tileElevations;
-  #tileGraphics;
+  #terrainGraphics;
   #tileset;
+  #action;
   #hoveredTile;
   #cursor;
-  #currentTool; // { type: terrain|elevation }
   #cursorTextures;
+  #isPressed;
 
   constructor(tileset) {
     super();
@@ -22,8 +27,8 @@ export class Tilemap extends PIXI.Container {
     this.#background.tint = 0x000000;
     this.addChild(this.#background);
 
-    this.#tileGraphics = new PIXI.Graphics();
-    this.addChild(this.#tileGraphics);
+    this.#terrainGraphics = new PIXI.Graphics();
+    this.addChild(this.#terrainGraphics);
 
     const tw = this.#tileset.tileWidth;
     this.#cursorTextures = {};
@@ -49,17 +54,22 @@ export class Tilemap extends PIXI.Container {
 
     // Allow mouse interaction
     this.interactive = true;
-    this.on('pointermove', this.onMouseMove.bind(this));
-    this.on('pointerdown', this.onMouseDown.bind(this));
+    this.on('pointerdown', this.onPointerDown.bind(this));
+    this.on('pointermove', this.onPointerMove.bind(this));
+    this.on('pointerup', this.onPointerUp.bind(this));
+    this.on('pointerupoutside', this.onPointerUp.bind(this));
 
     this.#hoveredTile = null;
-    this.#currentTool = { type: 'terrain', tileId: 0 };
 
+    this.#action = null;
     game.on('tile_id_selected', (tileId) => {
-      this.#currentTool = { type: 'terrain', tileId };
+      this.#action = new TilemapActionTilePainter(this, tileId);
     });
     game.on('elevation_selected', (direction) => {
-      this.#currentTool = { type: 'elevation', direction };
+      this.#action = new TilemapActionElevation(this, direction === 'raise' ? 1 : -1);
+    });
+    game.on('road_selected', () => {
+      this.#action = new TilemapActionRoad(this);
     });
   }
 
@@ -67,6 +77,31 @@ export class Tilemap extends PIXI.Container {
   get nbCols() { return this.#cols; }
   get nbRows() { return this.#rows; }
   get tileset() { return this.#tileset; }
+
+  onPointerDown(event) {
+    // Left click
+    if (event.data.button === 0 && this.#hoveredTile && this.#action) {
+      this.#action.onTilePressed(this.#hoveredTile.i, this.#hoveredTile.j);
+      this.#isPressed = true;
+    }
+  }
+
+  onPointerMove(event) {
+    const position = event.data.getLocalPosition(this);
+    const newTileSelected = this.selectTileAtPosition(position.x, position.y);
+    if (newTileSelected && this.#isPressed && this.#action) {
+      this.#action.onTileDragged(this.#hoveredTile.i, this.#hoveredTile.j);
+    }
+  }
+
+  onPointerUp(event) {
+    if (event.data.button === 0) {
+      if (this.#action && this.#isPressed) {
+        this.#action.onTileReleased();
+      }
+      this.#isPressed = false;
+    }
+  }
 
   /**
    * Load a tilemap
@@ -98,29 +133,25 @@ export class Tilemap extends PIXI.Container {
    * Redraw all tiles. This clear and repopulate the Graphics object.
    */
   redrawTilemap() {
-    this.#tileGraphics.clear();
+    this.#terrainGraphics.clear();
     for (let j = 0; j < this.#rows; ++j) {
       for (let i = 0; i < this.#cols; ++i) {
         const index = j * this.#cols + i;
-        this.drawTile(i, j, this.#tileIds[index], this.#tileElevations[index]);
+        this.drawTile(i, j, this.#tileIds[index]);
       }
     }
   }
 
-  drawTile(i, j, tileId, elevation) {
+  drawTile(i, j, tileId) {
     // Tile position in the tilemap
     const pos = this.coordsToPixels(i, j);
-
-    // Move tile 'upwards' to apply elevation
-    pos.y -= this.#tileset.tileThickness * elevation;
-
     const tileTexture = this.#tileset.getTileTexture(tileId);
-    this.#tileGraphics.beginTextureFill({
+    this.#terrainGraphics.beginTextureFill({
       texture: tileTexture,
       matrix: new PIXI.Matrix().translate(pos.x, pos.y),
     });
-    this.#tileGraphics.drawRect(pos.x, pos.y, tileTexture.width, tileTexture.height + 0.5);
-    this.#tileGraphics.endFill();
+    this.#terrainGraphics.drawRect(pos.x, pos.y, tileTexture.width, tileTexture.height + 0.5);
+    this.#terrainGraphics.endFill();
   }
 
   /**
@@ -210,7 +241,9 @@ export class Tilemap extends PIXI.Container {
     return {
       x: (i * this.#tileset.tileWidth * 0.5) - (j * this.#tileset.tileWidth * 0.5)
         + ((this.#rows - 1) * this.#tileset.tileWidth * 0.5),
-      y: (i * this.#tileset.tileHeight * 0.5) + (j * this.#tileset.tileHeight * 0.5),
+      y: (i * this.#tileset.tileHeight * 0.5) + (j * this.#tileset.tileHeight * 0.5)
+        // Move upwards on y-axis to apply elevation
+        - this.#tileset.tileThickness * this.getElevationAt(i, j),
     };
   }
 
@@ -222,14 +255,6 @@ export class Tilemap extends PIXI.Container {
       return j * this.#cols + i;
     }
     return -1;
-  }
-
-  onMouseMove(event) {
-    const position = event.data.getLocalPosition(this);
-    const isSelected = this.selectTileAtPosition(position.x, position.y);
-    if (isSelected && event.data.pressure > 0) {
-      this.applyToolOnHoveredTile();
-    }
   }
 
   /**
@@ -257,39 +282,10 @@ export class Tilemap extends PIXI.Container {
           return false;
         }
         this.#hoveredTile = { i, j };
-
         this.#cursor.position = this.coordsToPixels(i, j);
-        // Cursor tiles don't have a thickness. Adjust position to make them fit
-        // tiles from the tileset.
-        this.#cursor.position.y -= elevation * this.#tileset.tileThickness;
-
-        // Adapt cursor image according to elevation neighbors
-        let z;
-        const hideWest = (z = this.getElevationAt(i, j + 1)) && z && z > elevation;
-        const hideEast = (z = this.getElevationAt(i + 1, j)) && z && z > elevation;
-        const hideSouth = (z = this.getElevationAt(i + 1, j + 1)) && z && z > elevation;
-        // South2: check if higher by at least 2 units of elevation
-        const hideSouth2 = (z = this.getElevationAt(i + 1, j + 1)) && z && z > elevation + 1;
-
-        if (hideSouth2) {
-          this.#cursor.texture = this.#cursorTextures.SS;
-        } else if (hideEast && hideWest) {
-          this.#cursor.texture = this.#cursorTextures.EW;
-        } else if (hideEast && hideSouth) {
-          this.#cursor.texture = this.#cursorTextures.ES;
-        } else if (hideWest && hideSouth) {
-          this.#cursor.texture = this.#cursorTextures.SW;
-        } else if (hideEast) {
-          this.#cursor.texture = this.#cursorTextures.E;
-        } else if (hideSouth) {
-          this.#cursor.texture = this.#cursorTextures.S;
-        } else if (hideWest) {
-          this.#cursor.texture = this.#cursorTextures.W;
-        } else {
-          this.#cursor.texture = this.#cursorTextures.FULL;
-        }
-
+        this.#cursor.texture = this.getTileCursorTexture(i, j);
         this.#cursor.visible = true;
+
         const tileId = this.tileIds[this.coordsToIndex(i, j)];
         game.emit('tile_pointed', {
           tileId, tileDesc: Tileset.tileDesc(tileId), elevation, i, j,
@@ -309,11 +305,28 @@ export class Tilemap extends PIXI.Container {
     this.selectTileAtPosition(pos.x, pos.y, true);
   }
 
-  onMouseDown(event) {
-    // Left click
-    if (event.data.button === 0) {
-      this.applyToolOnHoveredTile();
-    }
+  /**
+   * Get the texture for cursor when hovering a tile
+   * @return PIXI.Texture
+   */
+  getTileCursorTexture(i, j) {
+    const elevation = this.getElevationAt(i, j);
+    // Adapt cursor image according to elevation neighbors
+    let z;
+    const hideWest = (z = this.getElevationAt(i, j + 1)) && z && z > elevation;
+    const hideEast = (z = this.getElevationAt(i + 1, j)) && z && z > elevation;
+    const hideSouth = (z = this.getElevationAt(i + 1, j + 1)) && z && z > elevation;
+    // South2: check if higher by at least 2 units of elevation
+    const hideSouth2 = (z = this.getElevationAt(i + 1, j + 1)) && z && z > elevation + 1;
+
+    if (hideSouth2) return this.#cursorTextures.SS;
+    if (hideEast && hideWest) return this.#cursorTextures.EW;
+    if (hideEast && hideSouth) return this.#cursorTextures.ES;
+    if (hideWest && hideSouth) return this.#cursorTextures.SW;
+    if (hideEast) return this.#cursorTextures.E;
+    if (hideSouth) return this.#cursorTextures.S;
+    if (hideWest) return this.#cursorTextures.W;
+    return this.#cursorTextures.FULL;
   }
 
   setTileAt(i, j, tileId) {
@@ -343,6 +356,14 @@ export class Tilemap extends PIXI.Container {
     return null;
   }
 
+  digAt(index) {
+    this.#tileElevations[index]--;
+  }
+
+  raiseAt(index) {
+    this.#tileElevations[index]++;
+  }
+
   /**
    * Put a Road tile at given coords
    */
@@ -355,7 +376,8 @@ export class Tilemap extends PIXI.Container {
   }
 
   /**
-   * Put a tile connecting with the 4 surrounding tiles
+   * Select the tileId connecting with the 4 surrounding tiles of same kind.
+   * The 4 surrounding neighbors will also be updated if needed.
    * @param i, j: tile coords
    * @param checkTypeFn: callback function that check if tile matches the expected type
    * @param neighborAtlas: list of neighbor tile ids, defined in Tileset
@@ -394,107 +416,24 @@ export class Tilemap extends PIXI.Container {
     return tileId == null || Tileset.isWater(tileId);
   }
 
-  updateTileElevationAt(i, j, direction) {
-    const index = this.coordsToIndex(i, j);
-    const visited = new Set();
-    const elevation = this.#tileElevations[index];
-    if (direction === 'raise' && elevation < MAX_ELEVATION) {
-      this.normalizeElevation(i, j, elevation + 1, 1, visited);
-    } else if (direction === 'dig' && elevation > 0) {
-      this.normalizeElevation(i, j, elevation - 1, -1, visited);
-    }
-
-    // Refresh cursor selection: map geometry has changed and cursor could be
-    // now hovering a different tile than before!
-    this.refreshPointerSelection();
-  }
-
-  /**
-   * Recursive function for handling elevation gradually. Ensure each tile
-   * neighbor has an elevation of +/- 1 (no "cliff")
-   * @param i, j: tile coords
-   * @param zLimit: min (raising) or max (digging) allowed elevation for tile
-   * @param dir: 1 for raising, -1 for digging
-   * @param visited: Set of already visited tile index
-   */
-  normalizeElevation(i, j, zLimit, dir, visited) {
-    const index = this.coordsToIndex(i, j);
-    if (index !== -1 && !visited.has(index)) {
-      const elevation = this.#tileElevations[index];
-      if (dir === 1 && elevation < zLimit) {
-        visited.add(index);
-        // Raising terrain, tile is too low
-        zLimit = this.#tileElevations[index]++;
-        this.normalizeElevation(i - 1, j, zLimit, dir, visited);
-        this.normalizeElevation(i + 1, j, zLimit, dir, visited);
-        this.normalizeElevation(i, j - 1, zLimit, dir, visited);
-        this.normalizeElevation(i, j + 1, zLimit, dir, visited);
-      } else if (dir === -1 && elevation > zLimit) {
-        visited.add(index);
-        // Lowering terrain, tile is too high
-        zLimit = this.#tileElevations[index]--;
-        this.normalizeElevation(i - 1, j, zLimit, dir, visited);
-        this.normalizeElevation(i + 1, j, zLimit, dir, visited);
-        this.normalizeElevation(i, j - 1, zLimit, dir, visited);
-        this.normalizeElevation(i, j + 1, zLimit, dir, visited);
-      } else {
-        return;
-      }
-      // Rewrite the tile, so elevation can be applied (different tileId)
-      this.setTileAt(i, j, this.#tileIds[index]);
-    }
-  }
-
-  /**
-   * Apply current editor tool on the tile under cursor
-   */
-  applyToolOnHoveredTile() {
-    if (this.#hoveredTile) {
-      const { i, j } = this.#hoveredTile;
-
-      if (this.#currentTool.type === 'terrain') {
-        const { tileId } = this.#currentTool;
-        const previousTileId = this.getTileAt(i, j);
-
-        // If tileId is a special type, use smart selection instead of tileId argument
-        if (Tileset.isRoad(tileId)) {
-          this.setRoadAt(i, j);
-        } else if (Tileset.isWater(tileId)) {
-          this.setWaterAt(i, j);
-        } else {
-          this.setTileAt(i, j, tileId);
-        }
-
-        // When adding or removing a special tile: check same-type neighbors for update
-        if (Tileset.isRoad(tileId) || Tileset.isRoad(previousTileId)) {
-          if (this.isRoad(i - 1, j)) this.setRoadAt(i - 1, j);
-          if (this.isRoad(i + 1, j)) this.setRoadAt(i + 1, j);
-          if (this.isRoad(i, j - 1)) this.setRoadAt(i, j - 1);
-          if (this.isRoad(i, j + 1)) this.setRoadAt(i, j + 1);
-        }
-        if (Tileset.isWater(tileId) || Tileset.isWater(previousTileId)) {
-          if (this.isWater(i - 1, j)) this.setWaterAt(i - 1, j);
-          if (this.isWater(i + 1, j)) this.setWaterAt(i + 1, j);
-          if (this.isWater(i, j - 1)) this.setWaterAt(i, j - 1);
-          if (this.isWater(i, j + 1)) this.setWaterAt(i, j + 1);
-        }
-      } else if (this.#currentTool.type === 'elevation') {
-        this.updateTileElevationAt(i, j, this.#currentTool.direction);
-      }
-      this.redrawTilemap();
-    }
-  }
-
   /**
    * Look for basic tiles and replace them with specific tiles of same kind (texture
    * transition, etc.)
+   * @param si, sj: top-left of search&replace area
+   * @param ei, ej: bottom-right of search&replace area
    */
-  putSpecialTiles() {
-    for (let j = 0; j < this.#rows; ++j) {
-      for (let i = 0; i < this.#cols; ++i) {
-        const index = this.coordsToIndex(i, j);
-        if (this.#tileIds[index] === Tileset.WaterBase) {
+  putSpecialTiles(si = 0, sj = 0, ei = this.#cols - 1, ej = this.#rows - 1) {
+    si = Math.max(0, si);
+    sj = Math.max(0, sj);
+    ei = Math.min(ei, this.#cols - 1);
+    ej = Math.min(ej, this.#rows - 1);
+    for (let j = sj; j <= ej; ++j) {
+      for (let i = si; i <= ei; ++i) {
+        const tileId = this.#tileIds[this.coordsToIndex(i, j)];
+        if (Tileset.isWater(tileId)) {
           this.setWaterAt(i, j);
+        } else if (Tileset.isRoad(tileId)) {
+          this.setRoadAt(i, j);
         }
       }
     }

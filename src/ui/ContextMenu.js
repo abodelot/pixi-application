@@ -20,7 +20,7 @@ export class ContextMenu extends PIXI.Container {
     const offsetY = count * Style.baseHeight;
 
     const item = new ContextMenuItem(label, callback);
-    item.mousedown = () => {
+    item.pointertap = () => {
       this.close();
       if (callback) {
         callback();

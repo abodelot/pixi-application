@@ -12,6 +12,7 @@ export class MiniMap extends PIXI.Container {
   #colors;
   #screenView;
   #ratio;
+  #isPressed;
 
   constructor(width, height) {
     super();
@@ -38,12 +39,34 @@ export class MiniMap extends PIXI.Container {
     // Drag'n'drop screenView
     this.interactive = true;
     this.hitArea = new PIXI.Rectangle(0, 0, width, height);
-    this.on('pointermove', this.onMouseMove.bind(this));
-    this.on('pointerdown', this.onMouseDown.bind(this));
+    this.on('pointerdown', this.onPointerDown.bind(this));
+    this.on('pointermove', this.onPointerMove.bind(this));
+    this.on('pointerup', this.onPointerUp.bind(this));
+    this.on('pointerupoutside', this.onPointerUp.bind(this));
 
     game.on('viewport_moved', (position) => {
       this.moveScreenView(position);
     });
+  }
+
+  onPointerDown(event) {
+    // Left click
+    if (event.data.button === 0) {
+      this.#isPressed = true;
+      this.moveTilemap(event.data.getLocalPosition(this));
+    }
+  }
+
+  onPointerMove(event) {
+    if (this.#isPressed) {
+      this.moveTilemap(event.data.getLocalPosition(this));
+    }
+  }
+
+  onPointerUp(event) {
+    if (event.data.button === 0) {
+      this.#isPressed = false;
+    }
   }
 
   createMiniMap(width, height) {
@@ -142,18 +165,5 @@ export class MiniMap extends PIXI.Container {
     position.x /= -this.#ratio;
     position.y /= -this.#ratio;
     game.emit('minimap_clicked', position);
-  }
-
-  onMouseDown(event) {
-    // Left click
-    if (event.data.button === 0) {
-      this.moveTilemap(event.data.getLocalPosition(this));
-    }
-  }
-
-  onMouseMove(event) {
-    if (event.data.pressure > 0) {
-      this.moveTilemap(event.data.getLocalPosition(this));
-    }
   }
 }

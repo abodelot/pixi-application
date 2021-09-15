@@ -32,7 +32,7 @@ export class ScrollContainer extends PIXI.Container {
 
     // Allow mouse interaction
     this.interactive = true;
-    this.on('pointerdown', this.onMouseDown.bind(this));
+    this.on('pointerdown', this.onPointerDown.bind(this));
 
     // Use a mask to crop content outside of the bounding box
     const mask = new PIXI.Graphics();
@@ -48,7 +48,7 @@ export class ScrollContainer extends PIXI.Container {
       this.moveContentTo(position);
     });
 
-    game.app.view.addEventListener('mousewheel', this.onMouseWheel.bind(this), { passive: false });
+    game.app.view.addEventListener('wheel', this.onMouseWheel.bind(this), { passive: false });
   }
 
   setContent(element) {
@@ -73,7 +73,7 @@ export class ScrollContainer extends PIXI.Container {
     this.mask = mask;
   }
 
-  onMouseDown(event) {
+  onPointerDown(event) {
     // Middle click
     if (event.data.originalEvent.button === 1) {
       event.stopPropagation();
@@ -90,10 +90,10 @@ export class ScrollContainer extends PIXI.Container {
 
   onMouseWheel(event) {
     const pos = { x: event.offsetX, y: event.offsetY };
-    // Check that mouse is still over container
+    // Check that pointer is still over container
     const target = game.app.renderer.plugins.interaction.hitTest(pos);
     if (target === this.#content) {
-      const mouse = this.toLocal(pos);
+      const pointer = this.toLocal(pos);
       if (event.deltaY > 0 && this.#zoomFactor > ZOOM_MIN) {
         this.#zoomFactor--;
       } else if (event.deltaY < 0 && this.#zoomFactor < ZOOM_MAX) {
@@ -102,20 +102,20 @@ export class ScrollContainer extends PIXI.Container {
         return;
       }
 
-      // Mouse position, relative to the content
-      const dx = mouse.x - this.#content.x;
-      const dy = mouse.y - this.#content.y;
+      // Pointer position, relative to the content
+      const dx = pointer.x - this.#content.x;
+      const dy = pointer.y - this.#content.y;
       const oldSize = this.#content.width;
 
       // Resize content
       this.#content.width = this.#content.pixelWidth * this.#zoomFactor;
       this.#content.height = this.#content.pixelHeight * this.#zoomFactor;
 
-      // Adjust content position, so mouse is still hovering the same place
+      // Adjust content position, so pointer is still hovering the same place
       const newSize = this.#content.width;
       const ratio = newSize / oldSize;
-      this.#content.x = -(dx * ratio) + mouse.x;
-      this.#content.y = -(dy * ratio) + mouse.y;
+      this.#content.x = -(dx * ratio) + pointer.x;
+      this.#content.y = -(dy * ratio) + pointer.y;
 
       // Refresh minimap
       Context.miniMap.rebuildScreenView();
