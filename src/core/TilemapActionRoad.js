@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { sound } from '@pixi/sound';
 
 import { Tileset } from './Tileset';
 import { TilemapActionBase } from './TilemapActionBase';
@@ -29,19 +30,26 @@ export class TilemapActionRoad extends TilemapActionBase {
 
   onTileReleased() {
     // Put road tiles on tilemap
+    let roads = 0;
     this.getPath().forEach(({ i, j }) => {
       if (Tileset.isConstructible(this.tilemap.getTileAt(i, j))) {
         this.tilemap.setRoadAt(i, j);
+        roads++;
       }
     });
-    // Refresh all tiles surrounding the road
-    this.tilemap.putSpecialTiles(
-      Math.min(this.#start.i, this.#end.i) - 1,
-      Math.min(this.#start.j, this.#end.j) - 1,
-      Math.max(this.#start.i, this.#end.i) + 1,
-      Math.max(this.#start.j, this.#end.j) + 1,
-    );
-    this.tilemap.redrawTilemap();
+    if (roads > 0) {
+      // Refresh all tiles surrounding the road
+      this.tilemap.putSpecialTiles(
+        Math.min(this.#start.i, this.#end.i) - 1,
+        Math.min(this.#start.j, this.#end.j) - 1,
+        Math.max(this.#start.i, this.#end.i) + 1,
+        Math.max(this.#start.j, this.#end.j) + 1,
+      );
+      this.tilemap.redrawTilemap();
+      sound.play('tilemap-road');
+    } else {
+      sound.play('tilemap-no-op');
+    }
     this.tilemap.removeChild(this.#graphics);
   }
 

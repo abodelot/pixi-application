@@ -27,7 +27,7 @@ module.exports = {
     },
   },
   devServer: {
-    contentBase: '.',
+    static: '.',
   },
   devtool: 'inline-source-map',
 };

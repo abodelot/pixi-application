@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { sound } from '@pixi/sound';
 
 import { TilemapActionBase } from './TilemapActionBase';
 
@@ -75,6 +76,7 @@ export class TilemapActionTilePainter extends TilemapActionBase {
         this.tilemap.setTileAt(i, j, this.#tileId);
       }
     }
+    sound.play('tilemap-tile');
     this.tilemap.putSpecialTiles(si - 1, sj - 1, ei + 1, ej + 1);
     this.tilemap.redrawTilemap();
   }

@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { sound } from '@pixi/sound';
 
 import { game } from '@src/core/Game';
 import { Style } from '@src/ui/Style';
@@ -9,7 +10,7 @@ import { MainMenuScene } from '@src/scenes/MainMenuScene';
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 PIXI.settings.ROUND_PIXELS = true;
 
-const assets = [
+const images = [
   'cursor.png',
   'screenview-9box.png',
   'shadow-9box.png',
@@ -18,7 +19,15 @@ const assets = [
   'ui-9box.png',
 ];
 
+const sounds = [
+  'tilemap-road',
+  'tilemap-tile',
+  'tilemap-no-op',
+];
+
 window.onload = () => {
+  sounds.forEach((name) => sound.add(name, `assets/sounds/${name}.ogg`));
+
   const app = new PIXI.Application({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -27,9 +36,7 @@ window.onload = () => {
   });
 
   game.initialize(app);
-  game.loadAssets(assets, () => {
-    console.log('assets loaded');
-
+  game.loadAssets(images, () => {
     Style.setTextures({
       button: game.getTexture('ui-9box.png'),
       shadow: game.getTexture('shadow-9box.png'),

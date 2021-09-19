@@ -1,3 +1,5 @@
+import { sound } from '@pixi/sound';
+
 import { MAX_ELEVATION } from './Tileset';
 import { TilemapActionBase } from './TilemapActionBase';
 
@@ -33,7 +35,11 @@ export class TilemapActionElevation extends TilemapActionBase {
       this.normalizeElevation(i, j, elevation + 1, visited);
     } else if (this.#direction === -1 && elevation > 0) {
       this.normalizeElevation(i, j, elevation - 1, visited);
+    } else {
+      sound.play('tilemap-no-op');
+      return;
     }
+    sound.play('tilemap-tile');
 
     // Refresh cursor selection: map geometry has changed and cursor could be
     // now hovering a different tile than before!
