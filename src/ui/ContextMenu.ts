@@ -15,17 +15,17 @@ export class ContextMenu extends PIXI.Container {
     this.addChild(this.#shadow, this.#itemContainer);
   }
 
-  addItem(label, callback) {
+  addItem(label: string, callback: () => void): void {
     const count = this.#itemContainer.children.length;
     const offsetY = count * Style.baseHeight;
 
-    const item = new ContextMenuItem(label, callback);
-    item.pointertap = () => {
+    const item = new ContextMenuItem(label);
+    item.on('pointertap', () => {
       this.close();
       if (callback) {
         callback();
       }
-    };
+    });
 
     item.position.y = offsetY;
     this.#itemContainer.addChild(item);
@@ -38,7 +38,7 @@ export class ContextMenu extends PIXI.Container {
   /**
    * Remove context menu from parent
    */
-  close() {
+  close(): void {
     if (this.parent) {
       this.parent.removeChild(this);
     }

@@ -3,12 +3,17 @@ import * as PIXI from 'pixi.js';
 import { Style } from './Style';
 import { Tab } from './Tab';
 
-export class TabContainer extends PIXI.Container {
-  #bg;
-  #tabs;
-  #activeTab;
+interface TabSlot {
+  tab: Tab;
+  content: PIXI.Container;
+}
 
-  constructor(width, height) {
+export class TabContainer extends PIXI.Container {
+  #bg: PIXI.NineSlicePlane;
+  #tabs: TabSlot[];
+  #activeTab: number;
+
+  constructor(width: number, height: number) {
     super();
 
     this.#bg = Style.createNineSlicePane(Style.textures.tab.panel);
@@ -27,10 +32,10 @@ export class TabContainer extends PIXI.Container {
    * Append a tab
    * @param content: PIXI.Container to associate with the tab
    */
-  addTab(label, content) {
+  addTab(label: string, content: PIXI.Container): void {
     const tab = new Tab(label);
     const index = this.#tabs.length;
-    tab.click = () => {
+    tab.on('click', () => {
       if (this.#activeTab !== index) {
         const previous = this.#tabs[this.#activeTab];
         previous.tab.release();
@@ -40,7 +45,7 @@ export class TabContainer extends PIXI.Container {
         this.#activeTab = index;
         this.#tabs[index].tab.press();
       }
-    };
+    });
 
     // Place content under the tab row
     content.y = Style.buttonHeight;
@@ -60,7 +65,7 @@ export class TabContainer extends PIXI.Container {
     this.addChild(tab);
   }
 
-  resize(width, height) {
+  resize(width: number, height: number): void {
     this.#bg.width = width;
     this.#bg.height = height - this.#bg.y;
   }

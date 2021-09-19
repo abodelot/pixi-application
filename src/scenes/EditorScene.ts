@@ -11,7 +11,7 @@ import { clamp, normalize } from '@src/core/Utils';
 import { ContextMenu } from '@src/ui/ContextMenu';
 import { ScrollContainer } from '@src/ui/ScrollContainer';
 import { TabContainer } from '@src/ui/TabContainer';
-import { Perlin } from '@src/vendor/PerlinNoise';
+import { Perlin } from '../vendor/PerlinNoise';
 
 import { BaseScene } from './BaseScene';
 import { MainMenuScene } from './MainMenuScene';
@@ -20,17 +20,17 @@ const TOOLBAR_HEIGHT = 200;
 const SIDEBAR_WIDTH = 260;
 
 export class EditorScene extends BaseScene {
-  #tabs;
-  #toolbar;
-  #scrollContainer;
+  #tabs: TabContainer;
+  #toolbar: Toolbar;
+  #scrollContainer: ScrollContainer;
 
-  constructor(game) {
-    super(game);
+  constructor() {
+    super();
 
     this.#tabs = new TabContainer(SIDEBAR_WIDTH, window.innerHeight - TOOLBAR_HEIGHT);
     this.container.addChild(this.#tabs);
 
-    const tileset = new Tileset(game.getTexture('tileset.png'), 32, 16, 4);
+    const tileset = new Tileset(Context.game.getTexture('tileset.png'), 32, 16, 4);
     this.#tabs.addTab('Terrain', new TileSelector(tileset));
     this.#tabs.addTab('Tileset', new TilesetViewer(tileset));
     this.#tabs.addTab('Items', new PIXI.Text('Content of tab 3'));
@@ -61,9 +61,9 @@ export class EditorScene extends BaseScene {
     debugBox.y = 10;
     this.container.addChild(debugBox);
 
-    let contextMenu = null;
+    let contextMenu: ContextMenu = null;
     // Replace native right click with custom menu
-    game.app.view.oncontextmenu = (e) => {
+    Context.game.app.view.oncontextmenu = (e) => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -77,10 +77,10 @@ export class EditorScene extends BaseScene {
       });
       contextMenu.addItem('Save and quit', () => {
         Context.tilemap.saveToLocalStorage();
-        game.selectScene(MainMenuScene);
+        Context.game.selectScene(MainMenuScene);
       });
       contextMenu.position.set(e.pageX, e.pageY);
-      game.app.stage.addChild(contextMenu);
+      Context.game.app.stage.addChild(contextMenu);
     };
   }
 
@@ -94,11 +94,11 @@ export class EditorScene extends BaseScene {
    */
   static createNewMap({
     size = 100, scale = 80, minNoise = 0, maxNoise = 1, functionName = 'simplex',
-  } = {}) {
-    const tileIds = [];
+  } = {}): void {
+    const tileIds: number[] = [];
     tileIds.length = size * size;
     tileIds.fill(0); // Default tileId=0 (grass)
-    const elevations = [];
+    const elevations: number[] = [];
     elevations.length = size * size;
     elevations.fill(0);
     const perlin = new Perlin(functionName);
@@ -132,14 +132,14 @@ export class EditorScene extends BaseScene {
     }
   }
 
-  // override
-  onExit() {
+  // eslint-disable-next-line
+  onExit(): void {
     // Restore native context menu
-    this.game.app.view.oncontextmenu = null;
+    Context.game.app.view.oncontextmenu = null;
   }
 
   // override
-  onResize(width, height) {
+  onResize(width: number, height: number): void {
     Context.viewPort = {
       width: width - SIDEBAR_WIDTH,
       height: height - TOOLBAR_HEIGHT,

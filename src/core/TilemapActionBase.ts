@@ -1,30 +1,28 @@
+import { Tilemap } from './Tilemap';
+
 /**
  * Base class for tilemap actions.
  * A TilemapAction is a tool triggered by the pointer on the tilemap
  */
-export class TilemapActionBase {
-  constructor(tilemap) {
+export abstract class TilemapActionBase {
+  readonly tilemap: Tilemap;
+
+  constructor(tilemap: Tilemap) {
     this.tilemap = tilemap;
   }
 
   /**
    * Pointer clicked on tile at i, j
    */
-  onTilePressed() {
-    return this;
-  }
+  abstract onTilePressed(i: number, j: number): void;
 
   /**
    * Pointer moved to tile at i, j while being pressed
    */
-  onTileDragged() {
-    return this;
-  }
+  abstract onTileDragged(i: number, j: number): void;
 
   /**
    * Pointer released
    */
-  onTileReleased() {
-    return this;
-  }
+  abstract onTileReleased(): void;
 }

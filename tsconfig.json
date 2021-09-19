@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "outDir": "./dist/",
+    "noImplicitAny": true,
+    "module": "es6",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "target": "es2018",
+    "strict": true,
+    "strictNullChecks": false,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"]
+    }
+  }
+}

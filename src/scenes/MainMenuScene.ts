@@ -1,17 +1,18 @@
 import { Layout } from '@src/ui/Layout';
 import { MessageBox } from '@src/ui/MessageBox';
 
+import { Context } from '@src/core/Context';
 import { BaseScene } from './BaseScene';
 import { EditorScene } from './EditorScene';
 
 export class MainMenuScene extends BaseScene {
-  constructor(game) {
-    super(game);
+  constructor() {
+    super();
 
     // Create application menu
     const menu = new Layout();
     menu.addOption('Editor', () => {
-      game.selectScene(EditorScene);
+      Context.game.selectScene(EditorScene);
     });
     menu.addOption('Help', () => {
       const box = new MessageBox(
@@ -31,4 +32,10 @@ export class MainMenuScene extends BaseScene {
     menu.position.set(20, 20);
     this.container.addChild(menu);
   }
+
+  // eslint-disable-next-line
+  onExit() {}
+
+  // eslint-disable-next-line
+  onResize() {}
 }

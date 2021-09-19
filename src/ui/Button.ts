@@ -6,7 +6,7 @@ export class Button extends PIXI.Container {
   #text;
   #bg;
 
-  constructor(name) {
+  constructor(name: string) {
     super();
 
     this.#text = Style.createText(name);
@@ -19,47 +19,46 @@ export class Button extends PIXI.Container {
     this.#text.y = (Style.buttonHeight - this.#text.height) / 2;
 
     this.addChild(this.#bg, this.#text);
+    // Events
     this.enable(true);
+    this.on('pointerout', this.defaultStyle.bind(this));
+    this.on('pointerover', this.hoverStyle.bind(this));
+    this.on('pointerup', this.defaultStyle.bind(this));
+    this.on('pointerdown', this.focusStyle.bind(this));
   }
 
-  defaultStyle() {
-    this.#bg.texture = Style.textures.button.normal;
-    this.#text.position.y = Style.padding;
+  defaultStyle(): void {
+    if (this.interactive) {
+      this.#bg.texture = Style.textures.button.normal;
+      this.#text.position.y = Style.padding;
+    }
   }
 
-  hoverStyle() {
-    this.#bg.texture = Style.textures.button.hover;
-    this.#text.position.y = Style.padding;
+  hoverStyle(): void {
+    if (this.interactive) {
+      this.#bg.texture = Style.textures.button.hover;
+      this.#text.position.y = Style.padding;
+    }
   }
 
-  focusStyle() {
-    this.#bg.texture = Style.textures.button.focus;
-    this.#text.position.y = Style.padding + 1;
+  focusStyle(): void {
+    if (this.interactive) {
+      this.#bg.texture = Style.textures.button.focus;
+      this.#text.position.y = Style.padding + 1;
+    }
   }
 
-  enable(enabled) {
+  enable(enabled: boolean): void {
     this.interactive = enabled;
 
     if (enabled) {
       this.#text.style.fill = Style.textColor;
       this.#text.style.dropShadow = false;
-
-      // Events
-      this.pointerout = this.defaultStyle;
-      this.pointerover = this.hoverStyle;
-      this.pointerup = this.defaultStyle;
-      this.pointerdown = this.focusStyle;
     } else {
       this.#text.style.fill = Style.textColorDisabled;
       this.#text.style.dropShadow = true;
       this.#text.style.dropShadowDistance = 1;
       this.#text.style.dropShadowColor = 0xffffff;
-
-      // Events
-      this.pointerout = null;
-      this.pointerover = null;
-      this.pointerup = null;
-      this.pointerdown = null;
     }
   }
 }

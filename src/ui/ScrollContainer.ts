@@ -1,8 +1,10 @@
 import * as PIXI from 'pixi.js';
 
-import { game } from '@src/core/Game';
+import { Point } from '@src/core/Types';
 import { Context } from '@src/core/Context';
+import { EventBus } from '@src/core/EventBus';
 import { clamp } from '@src/core/Utils';
+import { Tilemap } from '@src/core/Tilemap';
 
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 10;
@@ -12,14 +14,14 @@ const ZOOM_MAX = 10;
  */
 export class ScrollContainer extends PIXI.Container {
   #box;
-  #content;
-  #zoomFactor; // Size multiplicator applied to content
+  #content: Tilemap;
+  #zoomFactor: number; // Size multiplicator applied to content
 
   /**
    * @param viewWidth: viewport width (pixels)
    * @param viewHeight: viewport height (pixels)
    */
-  constructor(viewWidth, viewHeight) {
+  constructor(viewWidth: number, viewHeight: number) {
     super();
 
     // Container bounding box. It's not visible, because it's always overlaped
@@ -44,14 +46,16 @@ export class ScrollContainer extends PIXI.Container {
 
     this.#zoomFactor = 1;
 
-    game.on('minimap_clicked', (position) => {
-      this.moveContentTo(position);
+    EventBus.on('minimap_clicked', (pos: Point) => {
+      this.moveContentTo(pos.x, pos.y);
     });
 
-    game.app.view.addEventListener('wheel', this.onMouseWheel.bind(this), { passive: false });
+    Context.game.app.view.addEventListener(
+      'wheel', this.onMouseWheel.bind(this), { passive: false },
+    );
   }
 
-  setContent(element) {
+  setContent(element: Tilemap): void {
     this.#content = element;
     // Center inside view
     this.#content.x = -((this.#content.width - this.#box.width) / 2);
@@ -60,11 +64,11 @@ export class ScrollContainer extends PIXI.Container {
     this.addChild(this.#content);
   }
 
-  resize(width, height) {
+  resize(width: number, height: number): void {
     this.#box.width = width;
     this.#box.height = height;
 
-    this.removeChild(this.mask);
+    this.removeChild(this.mask as PIXI.Graphics);
     const mask = new PIXI.Graphics();
     mask.beginFill();
     mask.drawRect(0, 0, width, height);
@@ -73,9 +77,9 @@ export class ScrollContainer extends PIXI.Container {
     this.mask = mask;
   }
 
-  onPointerDown(event) {
+  onPointerDown(event: PIXI.InteractionEvent): void {
     // Middle click
-    if (event.data.originalEvent.button === 1) {
+    if (event.data.button === 1) {
       event.stopPropagation();
       const position = event.data.getLocalPosition(this);
 
@@ -84,14 +88,14 @@ export class ScrollContainer extends PIXI.Container {
       const dy = position.y - (this.#box.height / 2);
 
       // Apply delta and move content
-      this.moveContentTo({ x: this.#content.x - dx, y: this.#content.y - dy });
+      this.moveContentTo(this.#content.x - dx, this.#content.y - dy);
     }
   }
 
-  onMouseWheel(event) {
+  onMouseWheel(event: WheelEvent): void {
     const pos = { x: event.offsetX, y: event.offsetY };
     // Check that pointer is still over container
-    const target = game.app.renderer.plugins.interaction.hitTest(pos);
+    const target = Context.game.app.renderer.plugins.interaction.hitTest(pos);
     if (target === this.#content) {
       const pointer = this.toLocal(pos);
       if (event.deltaY > 0 && this.#zoomFactor > ZOOM_MIN) {
@@ -123,12 +127,12 @@ export class ScrollContainer extends PIXI.Container {
     }
   }
 
-  moveContentTo(position) {
+  moveContentTo(x: number, y: number): void {
     // Ensure content remains inside the box boundaries
-    const x = Math.floor(clamp(position.x, -this.#content.width + this.#box.width, 0));
-    const y = Math.floor(clamp(position.y, -this.#content.height + this.#box.height, 0));
+    x = Math.floor(clamp(x, -this.#content.width + this.#box.width, 0));
+    y = Math.floor(clamp(y, -this.#content.height + this.#box.height, 0));
 
-    this.#content.position = { x, y };
-    game.emit('viewport_moved', { x, y });
+    this.#content.position.set(x, y);
+    EventBus.emit('viewport_moved', { x, y });
   }
 }

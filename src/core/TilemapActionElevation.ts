@@ -1,35 +1,39 @@
 import { sound } from '@pixi/sound';
 
 import { MAX_ELEVATION } from './Tileset';
+import { Tilemap } from './Tilemap';
 import { TilemapActionBase } from './TilemapActionBase';
 
 /**
  * Action for modifying the tiles' elevation
  */
 export class TilemapActionElevation extends TilemapActionBase {
-  #direction;
+  #direction: number;
 
   /**
-   * @param {Tilemap} tilemap: tilemap instance
-   * @param {int} direction: 1 = raise, -1 = dig
+   * @param tilemap: tilemap instance
+   * @param direction: 1 = raise, -1 = dig
    */
-  constructor(tilemap, direction) {
+  constructor(tilemap: Tilemap, direction: number) {
     super(tilemap);
     this.#direction = direction;
   }
 
-  onTilePressed(i, j) {
+  onTilePressed(i: number, j: number): void {
     this.updateTileElevationAt(i, j);
     this.tilemap.redrawTilemap();
   }
 
-  onTileDragged(i, j) {
+  onTileDragged(i: number, j: number): void {
     this.updateTileElevationAt(i, j);
     this.tilemap.redrawTilemap();
   }
 
-  updateTileElevationAt(i, j) {
-    const visited = new Set();
+  // eslint-disable-next-line class-methods-use-this
+  onTileReleased(): void { /* no op */ }
+
+  updateTileElevationAt(i: number, j: number): void {
+    const visited = new Set<number>();
     const elevation = this.tilemap.getElevationAt(i, j);
     if (this.#direction === 1 && elevation < MAX_ELEVATION) {
       this.normalizeElevation(i, j, elevation + 1, visited);
@@ -49,11 +53,11 @@ export class TilemapActionElevation extends TilemapActionBase {
   /**
    * Recursive function for handling elevation gradually. Ensure each tile
    * neighbor has an elevation of +/- 1 (no "cliff")
-   * @param {int} i, j: tile coords
-   * @param {int} zLimit: min (raising) or max (digging) allowed elevation for tile
-   * @param {Set} visited: Set of already visited tile index
+   * @param i, j: tile coords
+   * @param zLimit: min (raising) or max (digging) allowed elevation for tile
+   * @param visited: Set of already visited tile index
    */
-  normalizeElevation(i, j, zLimit, visited) {
+  normalizeElevation(i: number, j: number, zLimit: number, visited: Set<number>): void {
     const index = this.tilemap.coordsToIndex(i, j);
     if (index !== -1 && !visited.has(index)) {
       const elevation = this.tilemap.getElevationAt(i, j);

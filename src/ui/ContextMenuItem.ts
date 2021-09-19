@@ -6,7 +6,7 @@ export class ContextMenuItem extends PIXI.Container {
   #text;
   #bg;
 
-  constructor(label) {
+  constructor(label: string) {
     super();
 
     this.#bg = new PIXI.Sprite(PIXI.Texture.WHITE);
@@ -20,16 +20,16 @@ export class ContextMenuItem extends PIXI.Container {
     this.addChild(this.#bg, this.#text);
 
     this.interactive = true;
-    this.mouseout = this.defaultStyle;
-    this.mouseover = this.hoverStyle;
+    this.on('mouseout', this.defaultStyle.bind(this));
+    this.on('mouseover', this.hoverStyle.bind(this));
   }
 
-  defaultStyle() {
+  defaultStyle(): void {
     this.#bg.tint = 0xffffff;
     this.#text.style.fill = Style.textColor;
   }
 
-  hoverStyle() {
+  hoverStyle(): void {
     this.#bg.tint = Style.bgColorSelected;
     this.#text.style.fill = Style.textColorSelected;
   }

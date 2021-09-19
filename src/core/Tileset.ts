@@ -1,5 +1,7 @@
 import * as PIXI from 'pixi.js';
 
+import { Color } from './Types';
+
 export const MAX_ELEVATION = 15;
 
 export class Tileset {
@@ -51,50 +53,40 @@ export class Tileset {
   static SandBase = 32;
   static WaterBase = 48;
 
-  #texture;
-  #tileWidth;
-  #tileHeight;
-  #tileThickness;
-  #cols;
-  #rows;
-  #textureCache;
+  readonly texture: PIXI.Texture;
+  readonly tileWidth: number;
+  readonly tileHeight: number;
+  readonly tileThickness: number;
+  readonly #cols: number;
+  readonly #rows: number;
+  readonly #textureCache: Record<string, PIXI.Texture>;
   // Use an internal canvas for extracting pixel values
-  #canvasElem;
-  #canvasCtx;
+  readonly #canvasElem: HTMLCanvasElement;
+  readonly #canvasCtx;
 
-  constructor(texture, tileWidth, tileHeight, tileThickness) {
-    this.#texture = texture;
-    this.#tileWidth = tileWidth;
-    this.#tileHeight = tileHeight;
-    this.#tileThickness = tileThickness;
+  constructor(texture: PIXI.Texture, tileWidth: number, tileHeight: number, tileThickness: number) {
+    this.texture = texture;
+    this.tileWidth = tileWidth;
+    this.tileHeight = tileHeight;
+    this.tileThickness = tileThickness;
 
     // Compute number of tile rows and cols in the tileset
     this.#cols = texture.baseTexture.width / tileWidth;
     this.#rows = texture.baseTexture.height / tileHeight;
 
     this.#textureCache = {};
-    this.buildCanvas();
-  }
 
-  get texture() { return this.#texture; }
-  get tileWidth() { return this.#tileWidth; }
-  get tileHeight() { return this.#tileHeight; }
-  get tileThickness() { return this.#tileThickness; }
-
-  /**
-   * Build an internal canvas object, which contains the tileset image
-   */
-  buildCanvas() {
-    const img = this.#texture.baseTexture.resource.source;
+    // Build an internal canvas object, which contains the tileset image
     this.#canvasElem = document.createElement('canvas');
     this.#canvasCtx = this.#canvasElem.getContext('2d');
+    const img = (this.texture.baseTexture as PIXI.BaseTexture<PIXI.ImageResource>).resource.source;
     this.#canvasCtx.drawImage(img, 0, 0);
   }
 
   /**
-   * @return {int} tileId
+   * @return tileId
    */
-  static getElevatedTileId(tileId, elevation) {
+  static getElevatedTileId(tileId: number, elevation: number): number {
     // Switch to another tile ID, representing the same base with elevation
     if (tileId <= (Tileset.GrassBase + MAX_ELEVATION)) {
       return Tileset.GrassBase + elevation;
@@ -113,13 +105,13 @@ export class Tileset {
    * Get a PIXI Texture with the bounding rect for the given tileId
    * @return PIXI.Texture
    */
-  getTileTexture(tileId) {
+  getTileTexture(tileId: number): PIXI.Texture {
     if (this.#textureCache[tileId]) {
       // Cache hit
       return this.#textureCache[tileId];
     }
     // Cache miss
-    const texture = new PIXI.Texture(this.#texture.baseTexture, this.getTileRect(tileId));
+    const texture = new PIXI.Texture(this.texture.baseTexture, this.getTileRect(tileId));
     this.#textureCache[tileId] = texture;
     return texture;
   }
@@ -128,7 +120,7 @@ export class Tileset {
    * Convert (i, j) coords in the tileset to tile id
    * @return int
    */
-  coordsToTileId(i, j) {
+  coordsToTileId(i: number, j: number): number {
     return j * this.#cols + i;
   }
 
@@ -136,14 +128,14 @@ export class Tileset {
    * Get the bounding rect in the tileset image
    * @return PIXI.Rectangle
    */
-  getTileRect(tileId) {
+  getTileRect(tileId: number): PIXI.Rectangle {
     if (tileId >= 0 && tileId < (this.#cols * this.#rows)) {
       const i = tileId % this.#cols;
       const j = Math.floor(tileId / this.#cols);
-      const fullHeight = this.#tileHeight + this.#tileThickness;
+      const fullHeight = this.tileHeight + this.tileThickness;
       return new PIXI.Rectangle(
-        i * this.#tileWidth, j * fullHeight,
-        this.#tileWidth, fullHeight,
+        i * this.tileWidth, j * fullHeight,
+        this.tileWidth, fullHeight,
       );
     }
     throw Error(`tileId out of tileset range: ${tileId}`);
@@ -153,11 +145,11 @@ export class Tileset {
    * Get color of given tile, by reading 1 pixel
    * @return { r, g, b }
    */
-  getTileColor(tileId) {
+  getTileColor(tileId: number): Color {
     const rect = this.getTileRect(tileId);
     // Extract 1 pixel at the center of the tile
-    const x = rect.x + this.#tileWidth / 2;
-    const y = rect.y + this.#tileHeight / 2;
+    const x = rect.x + this.tileWidth / 2;
+    const y = rect.y + this.tileHeight / 2;
     const pixel = this.#canvasCtx.getImageData(x, y, 1, 1);
     return {
       r: pixel.data[0],
@@ -166,15 +158,15 @@ export class Tileset {
     };
   }
 
-  static isRoad(tileId) {
+  static isRoad(tileId: number): boolean {
     return Object.values(Tileset.RoadNeighbors).includes(tileId);
   }
 
-  static isWater(tileId) {
+  static isWater(tileId: number): boolean {
     return Object.values(Tileset.WaterNeighbors).includes(tileId);
   }
 
-  static tileDesc(tileId) {
+  static tileDesc(tileId: number): string {
     if (Tileset.isRoad(tileId)) return 'road';
     if (Tileset.isWater(tileId)) return 'water';
     if (tileId >= Tileset.GrassBase && tileId <= Tileset.GrassBase + MAX_ELEVATION) return 'grass';
@@ -183,7 +175,7 @@ export class Tileset {
     return '?';
   }
 
-  static isConstructible(tileId) {
+  static isConstructible(tileId: number): boolean {
     return !Tileset.isRoad(tileId) && !Tileset.isWater(tileId);
   }
 }

@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 
 import { Style } from '@src/ui/Style';
 import { Button } from '@src/ui/Button';
+import { ListenerFn } from '@src/core/Types';
 
 export class MessageBox extends PIXI.Container {
   #header;
@@ -12,7 +13,7 @@ export class MessageBox extends PIXI.Container {
   #buttonOk;
   #buttonCancel;
 
-  constructor(message) {
+  constructor(message: string) {
     super();
 
     let y = 0;
@@ -55,7 +56,7 @@ export class MessageBox extends PIXI.Container {
       y,
     );
 
-    this.#bg = Style.createNineSlicePane(Style.textures.panel);
+    this.#bg = Style.createNineSlicePane(Style.textures.misc.panel);
     this.#bg.width = totalWidth;
     this.#bg.height = y + this.#buttonOk.height + Style.boxPadding;
 
@@ -68,13 +69,15 @@ export class MessageBox extends PIXI.Container {
     this.interactive = true;
   }
 
-  onOk(callback) {
-    this.#buttonOk.pointertap = callback;
+  onOk(callback: ListenerFn): void {
+    console.log('adding ', callback, 'to mEssagebox');
+
+    this.#buttonOk.on('pointertap', callback);
     this.#buttonOk.enable(true);
   }
 
-  onCancel(callback) {
-    this.#buttonCancel.pointertap = callback;
+  onCancel(callback: ListenerFn): void {
+    this.#buttonCancel.on('pointertap', callback);
     this.#buttonCancel.enable(true);
   }
 }

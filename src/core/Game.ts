@@ -1,43 +1,39 @@
 import * as PIXI from 'pixi.js';
+import { BaseScene } from '@src/scenes/BaseScene';
 
 /**
  * Application-wide class, used as a singleton. Handle the application state:
  * - Wrapper around PIXI application
  * - Resource manager: Game.loadAssets, Game.getTexture
  * - Scene system: Game.selectScene
- * - Event bus: Game.on, Game.emit
  */
-class Game {
-  #app;
-  #currentScene;
-  #loader;
-  #listeners;
+export class Game {
+  readonly app: PIXI.Application;
+  readonly #loader: PIXI.Loader;
+  #currentScene: BaseScene | null;
 
-  initialize(app) {
-    this.#app = app;
-    this.#currentScene = null;
+  constructor(app: PIXI.Application) {
+    this.app = app;
     this.#loader = new PIXI.Loader();
-    this.#listeners = {};
+    this.#currentScene = null;
   }
-
-  get app() { return this.#app; }
 
   /**
    * Create a new instance of given scene, and display it
    */
-  selectScene(SceneClass) {
+  selectScene(SceneClass: new (game: Game) => BaseScene): void {
     if (this.#currentScene != null) {
       this.#currentScene.onExit();
       // Remove display container from previous scene
-      this.#app.stage.removeChild(this.#currentScene.container);
+      this.app.stage.removeChild(this.#currentScene.container);
     }
 
     this.#currentScene = new SceneClass(this);
-    this.#app.stage.addChild(this.#currentScene.container);
+    this.app.stage.addChild(this.#currentScene.container);
   }
 
-  resizeScreen(width, height) {
-    this.#app.renderer.resize(width, height);
+  resizeScreen(width: number, height: number): void {
+    this.app.renderer.resize(width, height);
     this.#currentScene.onResize(width, height);
   }
 
@@ -46,7 +42,7 @@ class Game {
    * @param assets: array of paths
    * @param callback: on complete callback function
    */
-  loadAssets(assets, callback) {
+  loadAssets(assets: string[], callback: (loader: PIXI.Loader) => void): void {
     assets.forEach((path) => {
       this.#loader.add(path, `assets/${path}`);
     });
@@ -58,33 +54,11 @@ class Game {
    * @param name: image filename
    * @return PIXI.Texture
    */
-  getTexture(name) {
+  getTexture(name: string): PIXI.Texture {
     const resource = this.#loader.resources[name];
     if (resource === undefined) {
       throw Error(`Resource ${name} is not loaded.`);
     }
     return resource.texture;
   }
-
-  /**
-   * Send an event and dispatch it to the listeners
-   */
-  emit(eventName, argument) {
-    if (this.#listeners[eventName]) {
-      this.#listeners[eventName].forEach((callback) => callback(argument));
-    }
-  }
-
-  /**
-   * Register an event listener
-   */
-  on(eventName, callback) {
-    if (this.#listeners[eventName] === undefined) {
-      this.#listeners[eventName] = [];
-    }
-    this.#listeners[eventName].push(callback);
-  }
 }
-
-// Export singleton instance
-export const game = new Game();

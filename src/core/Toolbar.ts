@@ -14,7 +14,7 @@ export class Toolbar extends PIXI.Container {
    * @param width: content width (pixels)
    * @param height: content height (pixels)
    */
-  constructor(width, height) {
+  constructor(width: number, height: number) {
     super();
 
     this.#bg = Style.createNineSlicePane(Style.textures.tab.panel);
@@ -35,7 +35,7 @@ export class Toolbar extends PIXI.Container {
     this.addChild(this.#bg, this.#miniMap);
   }
 
-  resize(width, height) {
+  resize(width: number, height: number): void {
     this.#bg.width = width;
     this.#bg.height = height;
     this.#miniMap.x = this.#bg.width - this.#miniMap.width - miniMapMargin;

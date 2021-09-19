@@ -1,6 +1,8 @@
 import * as PIXI from 'pixi.js';
 import { sound } from '@pixi/sound';
 
+import { Coords } from './Types';
+import { Tilemap } from './Tilemap';
 import { Tileset } from './Tileset';
 import { TilemapActionBase } from './TilemapActionBase';
 
@@ -8,18 +10,24 @@ import { TilemapActionBase } from './TilemapActionBase';
  * Action for setting a path of road tiles
  */
 export class TilemapActionRoad extends TilemapActionBase {
-  #graphics;
-  #start;
-  #end;
+  readonly #graphics: PIXI.Graphics;
+  #start: Coords;
+  #end: Coords;
 
-  onTilePressed(i, j) {
+  constructor(tilemap: Tilemap) {
+    super(tilemap);
+    this.#graphics = new PIXI.Graphics();
+    this.#start = { i: 0, j: 0 };
+    this.#end = { i: 0, j: 0 };
+  }
+
+  onTilePressed(i: number, j: number): void {
     this.#start = { i, j };
     this.#end = this.#start;
-    this.#graphics = new PIXI.Graphics();
     this.tilemap.addChild(this.#graphics);
   }
 
-  onTileDragged(ei, ej) {
+  onTileDragged(ei: number, ej: number): void {
     this.#end = { i: ei, j: ej };
     this.#graphics.clear();
     // Draw cursor tiles to make a preview of the road
@@ -28,7 +36,7 @@ export class TilemapActionRoad extends TilemapActionBase {
     });
   }
 
-  onTileReleased() {
+  onTileReleased(): void {
     // Put road tiles on tilemap
     let roads = 0;
     this.getPath().forEach(({ i, j }) => {
@@ -50,6 +58,7 @@ export class TilemapActionRoad extends TilemapActionBase {
     } else {
       sound.play('tilemap-no-op');
     }
+    this.#graphics.clear();
     this.tilemap.removeChild(this.#graphics);
   }
 
@@ -57,7 +66,7 @@ export class TilemapActionRoad extends TilemapActionBase {
    * Get list of coords from #start to #end
    * @return Array of { i, j } coords
    */
-  getPath() {
+  getPath(): Coords[] {
     let { i, j } = this.#start;
     const di = i < this.#end.i ? 1 : -1;
     const dj = j < this.#end.j ? 1 : -1;
@@ -72,7 +81,7 @@ export class TilemapActionRoad extends TilemapActionBase {
     return path;
   }
 
-  drawPreviewTile(i, j) {
+  drawPreviewTile(i: number, j: number): void {
     const texture = this.tilemap.getTileCursorTexture(i, j);
     const color = Tileset.isConstructible(this.tilemap.getTileAt(i, j)) ? 0xffffff : 0xff0000;
     const pos = this.tilemap.coordsToPixels(i, j);

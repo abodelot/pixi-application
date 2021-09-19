@@ -1,10 +1,11 @@
 import * as PIXI from 'pixi.js';
 import { sound } from '@pixi/sound';
 
-import { game } from '@src/core/Game';
-import { Style } from '@src/ui/Style';
+import { Context } from './core/Context';
+import { Game } from './core/Game';
+import { Style } from './ui/Style';
 
-import { MainMenuScene } from '@src/scenes/MainMenuScene';
+import { MainMenuScene } from './scenes/MainMenuScene';
 
 // Disable smoothing for pixel-perfect rendering
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
@@ -35,18 +36,18 @@ window.onload = () => {
     backgroundColor: 0xb8b8b8,
   });
 
-  game.initialize(app);
-  game.loadAssets(images, () => {
+  Context.game = new Game(app);
+  Context.game.loadAssets(images, () => {
     Style.setTextures({
-      button: game.getTexture('ui-9box.png'),
-      shadow: game.getTexture('shadow-9box.png'),
+      button: Context.game.getTexture('ui-9box.png'),
+      shadow: Context.game.getTexture('shadow-9box.png'),
     });
 
-    game.selectScene(MainMenuScene);
+    Context.game.selectScene(MainMenuScene);
   });
   document.body.appendChild(app.view);
 };
 
 window.onresize = () => {
-  game.resizeScreen(window.innerWidth, window.innerHeight);
+  Context.game.resizeScreen(window.innerWidth, window.innerHeight);
 };

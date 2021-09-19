@@ -3,11 +3,11 @@ import * as PIXI from 'pixi.js';
 import { Style } from './Style';
 
 export class Tab extends PIXI.Container {
-  #text;
-  #bg;
-  #pressed;
+  readonly #text: PIXI.Text;
+  readonly #bg: PIXI.NineSlicePlane;
+  #pressed: boolean;
 
-  constructor(name) {
+  constructor(name: string) {
     super();
 
     this.#text = Style.createText(name);
@@ -22,23 +22,22 @@ export class Tab extends PIXI.Container {
     // Events
     this.#pressed = false;
     this.interactive = true;
-    this.pointerout = this.onPointerOut;
-    this.pointerover = this.onPointerOver;
-    this.pointerup = this.onPointerUp;
+    this.on('onpointerout', this.onPointerOut.bind(this));
+    this.on('pointerover', this.onPointerOver.bind(this));
     this.addChild(this.#bg, this.#text);
   }
 
-  press() {
+  press(): void {
     this.#pressed = true;
     this.#bg.texture = Style.textures.tab.focus;
   }
 
-  release() {
+  release(): void {
     this.#pressed = false;
     this.#bg.texture = Style.textures.tab.normal;
   }
 
-  onPointerOver() {
+  onPointerOver(): void {
     if (!this.#pressed) {
       this.#bg.texture = Style.textures.tab.hover;
     } else {
@@ -46,7 +45,7 @@ export class Tab extends PIXI.Container {
     }
   }
 
-  onPointerOut() {
+  onPointerOut(): void {
     if (!this.#pressed) {
       this.#bg.texture = Style.textures.tab.normal;
     } else {

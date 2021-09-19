@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
-import { game } from '@src/core/Game';
+import { EventBus } from '@src/core/EventBus';
+import { TilePointedEvent } from './Tilemap';
 
 /**
  * Display information on hovered tile
@@ -21,15 +22,15 @@ export class DebugBox extends PIXI.Container {
     this.addChild(this.#bg);
 
     this.#labelCoords = new PIXI.Text('', { fontSize: 14 });
-    this.#labelCoords.position = { x: 10, y: 10 };
+    this.#labelCoords.position.set(10, 10);
     this.#labelTileId = new PIXI.Text('', { fontSize: 14 });
-    this.#labelTileId.position = { x: 10, y: 30 };
+    this.#labelTileId.position.set(10, 30);
     this.#labelElevation = new PIXI.Text('', { fontSize: 14 });
-    this.#labelElevation.position = { x: 10, y: 50 };
+    this.#labelElevation.position.set(10, 50);
     this.addChild(this.#labelCoords, this.#labelTileId, this.#labelElevation);
     this.visible = false;
 
-    game.on('tile_pointed', (info) => {
+    EventBus.on('tile_pointed', (info: TilePointedEvent) => {
       if (info) {
         this.visible = true;
         this.#labelCoords.text = `Coords: i:${info.i}; j:${info.j}`;

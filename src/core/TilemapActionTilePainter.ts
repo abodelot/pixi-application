@@ -1,58 +1,50 @@
 import * as PIXI from 'pixi.js';
 import { sound } from '@pixi/sound';
 
+import { Tilemap } from './Tilemap';
 import { TilemapActionBase } from './TilemapActionBase';
+import { Coords } from './Types';
 
 /**
  * Action for replacing all tiles in the selected rectangle area with selected tile id
  */
 export class TilemapActionTilePainter extends TilemapActionBase {
-  #graphics;
-  #start;
-  #end;
-  #tileId;
+  #graphics: PIXI.Graphics;
+  #start: Coords = { i: 0, j: 0 };
+  #end: Coords = { i: 0, j: 0 };
+  #tileId: number;
 
-  constructor(tilemap, tileId) {
+  constructor(tilemap: Tilemap, tileId: number) {
     super(tilemap);
     this.#tileId = tileId;
+    this.#graphics = new PIXI.Graphics();
   }
 
-  onTilePressed(i, j) {
+  onTilePressed(i: number, j: number): void {
     this.#start = { i, j };
     this.#end = this.#start;
-    this.#graphics = new PIXI.Graphics();
     this.tilemap.addChild(this.#graphics);
   }
 
-  onTileDragged(i, j) {
+  onTileDragged(i: number, j: number): void {
     this.#end = { i, j };
-
-    this.buildPreview(
-      Math.min(this.#start.i, this.#end.i),
-      Math.min(this.#start.j, this.#end.j),
-      Math.max(this.#start.i, this.#end.i),
-      Math.max(this.#start.j, this.#end.j),
-    );
+    this.buildPreview(Coords.min(this.#start, this.#end), Coords.max(this.#start, this.#end));
   }
 
-  onTileReleased() {
+  onTileReleased(): void {
     this.tilemap.removeChild(this.#graphics);
-    this.applyTileId(
-      Math.min(this.#start.i, this.#end.i),
-      Math.min(this.#start.j, this.#end.j),
-      Math.max(this.#start.i, this.#end.i),
-      Math.max(this.#start.j, this.#end.j),
-    );
+    this.#graphics.clear();
+    this.applyTileId(Coords.min(this.#start, this.#end), Coords.max(this.#start, this.#end));
   }
 
   /**
    * @param si, sj: start i, j coords
    * @param ei, ej: end i, j coords
    */
-  buildPreview(si, sj, ei, ej) {
+  buildPreview(start: Coords, end: Coords): void {
     this.#graphics.clear();
-    for (let i = si; i <= ei; ++i) {
-      for (let j = sj; j <= ej; ++j) {
+    for (let i = start.i; i <= end.i; ++i) {
+      for (let j = start.j; j <= end.j; ++j) {
         const texture = this.tilemap.getTileCursorTexture(i, j);
         const pos = this.tilemap.coordsToPixels(i, j);
         this.#graphics.beginTextureFill({
@@ -67,17 +59,17 @@ export class TilemapActionTilePainter extends TilemapActionBase {
 
   /**
    * Paint rectangle area with selected tile id
-   * @param si, sj: start point (rectangle top-left)
-   * @param ei, ej: end point (rectangle bottom-right)
+   * @param start: start point (rectangle top-left)
+   * @param end: end point (rectangle bottom-right)
    */
-  applyTileId(si, sj, ei, ej) {
-    for (let i = si; i <= ei; ++i) {
-      for (let j = sj; j <= ej; ++j) {
+  applyTileId(start: Coords, end: Coords): void {
+    for (let i = start.i; i <= end.i; ++i) {
+      for (let j = start.j; j <= end.j; ++j) {
         this.tilemap.setTileAt(i, j, this.#tileId);
       }
     }
     sound.play('tilemap-tile');
-    this.tilemap.putSpecialTiles(si - 1, sj - 1, ei + 1, ej + 1);
+    this.tilemap.putSpecialTiles(start.i - 1, start.j - 1, end.i + 1, end.j + 1);
     this.tilemap.redrawTilemap();
   }
 }

@@ -1,30 +1,26 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/main.js',
+  entry: './src/index.ts',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js'
+    filename: 'bundle.js',
   },
   mode: 'development',
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.ts$/,
+        use: 'ts-loader',
         exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env']
-          }
-        }
-      }
-    ]
+      },
+    ],
   },
   resolve: {
     alias: {
       '@src': path.resolve(__dirname, 'src'),
     },
+    extensions: ['.ts', '.js'],
   },
   devServer: {
     static: '.',

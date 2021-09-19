@@ -1,20 +1,22 @@
 import * as PIXI from 'pixi.js';
 
-import { game } from './Game';
+import { TilemapUpdatedEvent } from './Tilemap';
 import { Context } from './Context';
+import { EventBus } from './EventBus';
+import { Point } from './Types';
 
 /**
  * Display a replica of the tilemap in a small image
  * Each tile in the Tilemap is a pixel in the MiniMap texture
  */
 export class MiniMap extends PIXI.Container {
-  #texture;
-  #colors;
-  #screenView;
-  #ratio;
-  #isPressed;
+  #texture: PIXI.Texture;
+  #colors: Uint8Array;
+  #screenView: PIXI.NineSlicePlane;
+  #ratio: number;
+  #isPressed = false;
 
-  constructor(width, height) {
+  constructor(width: number, height: number) {
     super();
     // Compute size factor between minimap and tilemap
     this.#ratio = width / Context.tilemap.width;
@@ -22,7 +24,9 @@ export class MiniMap extends PIXI.Container {
     this.createMiniMap(width, height);
 
     // Create screenView from viewPort dimensions
-    this.#screenView = new PIXI.NineSlicePlane(game.getTexture('screenview-9box.png'), 3, 3, 3, 3);
+    this.#screenView = new PIXI.NineSlicePlane(
+      Context.game.getTexture('screenview-9box.png'), 3, 3, 3, 3,
+    );
     this.#screenView.width = Context.viewPort.width * this.#ratio;
     this.#screenView.height = Context.viewPort.height * this.#ratio;
     this.addChild(this.#screenView);
@@ -31,8 +35,8 @@ export class MiniMap extends PIXI.Container {
     this.moveScreenView(Context.tilemap.position);
 
     // Update the minimap texture when the tilemap is updated
-    game.on('tilemap_updated', (args) => {
-      this.writeTile(args.index, args.tileId);
+    EventBus.on('tilemap_updated', (event: TilemapUpdatedEvent) => {
+      this.writeTile(event.index, event.tileId);
       this.#texture.update();
     });
 
@@ -44,12 +48,12 @@ export class MiniMap extends PIXI.Container {
     this.on('pointerup', this.onPointerUp.bind(this));
     this.on('pointerupoutside', this.onPointerUp.bind(this));
 
-    game.on('viewport_moved', (position) => {
+    EventBus.on('viewport_moved', (position: Point) => {
       this.moveScreenView(position);
     });
   }
 
-  onPointerDown(event) {
+  onPointerDown(event: PIXI.InteractionEvent): void {
     // Left click
     if (event.data.button === 0) {
       this.#isPressed = true;
@@ -57,19 +61,19 @@ export class MiniMap extends PIXI.Container {
     }
   }
 
-  onPointerMove(event) {
+  onPointerMove(event: PIXI.InteractionEvent): void {
     if (this.#isPressed) {
       this.moveTilemap(event.data.getLocalPosition(this));
     }
   }
 
-  onPointerUp(event) {
+  onPointerUp(event: PIXI.InteractionEvent): void {
     if (event.data.button === 0) {
       this.#isPressed = false;
     }
   }
 
-  createMiniMap(width, height) {
+  createMiniMap(width: number, height: number): void {
     const { tileIds, nbCols, nbRows } = Context.tilemap;
     const size = nbCols * nbRows;
 
@@ -106,7 +110,7 @@ export class MiniMap extends PIXI.Container {
     this.addChild(wrapper);
   }
 
-  rebuildMiniMap() {
+  rebuildMiniMap(): void {
     const { tileIds, nbCols, nbRows } = Context.tilemap;
     const size = nbCols * nbRows;
     for (let i = 0; i < size; ++i) {
@@ -119,8 +123,8 @@ export class MiniMap extends PIXI.Container {
    * Recompute ratio to tilemap and rebuild screen view.
    * Called when window is resized.
    */
-  rebuildScreenView() {
-    this.#ratio = this.hitArea.width / Context.tilemap.width;
+  rebuildScreenView(): void {
+    this.#ratio = this.width / Context.tilemap.width;
     this.#screenView.width = Context.viewPort.width * this.#ratio;
     this.#screenView.height = Context.viewPort.height * this.#ratio;
   }
@@ -128,25 +132,22 @@ export class MiniMap extends PIXI.Container {
   /**
    * @param index: tile index in the tilemap (as 1D array)
    */
-  writeTile(index, tileId) {
+  writeTile(index: number, tileId: number): void {
     index *= 4;
     // Map tileId to a color
     const color = Context.tilemap.tileset.getTileColor(tileId);
-    this.writePixel(index, color.r, color.g, color.b);
-  }
-
-  writePixel(offset, r, g, b) {
-    this.#colors[offset] = r;
-    this.#colors[offset + 1] = g;
-    this.#colors[offset + 2] = b;
-    this.#colors[offset + 3] = 255; // No transparency
+    // Write pixel
+    this.#colors[index] = color.r;
+    this.#colors[index + 1] = color.g;
+    this.#colors[index + 2] = color.b;
+    this.#colors[index + 3] = 255; // No transparency
   }
 
   /**
    * Sync the screenView in the minimap with the tilemap position
    * @param position: tilemap position in the viewport
    */
-  moveScreenView(position) {
+  moveScreenView(position: PIXI.IPoint | Point): void {
     // Convert tilemap position to screenView dimensions
     this.#screenView.x = -position.x * this.#ratio;
     this.#screenView.y = -position.y * this.#ratio;
@@ -156,7 +157,7 @@ export class MiniMap extends PIXI.Container {
    * Sync the tilemap with the minimap screenView position
    * @param position: screenView position in the minimap
    */
-  moveTilemap(position) {
+  moveTilemap(position: PIXI.IPoint): void {
     // Offset to make click at the center of screenView
     position.x -= this.#screenView.width / 2;
     position.y -= this.#screenView.height / 2;
@@ -164,6 +165,6 @@ export class MiniMap extends PIXI.Container {
     // Convert position to tilemap coords system
     position.x /= -this.#ratio;
     position.y /= -this.#ratio;
-    game.emit('minimap_clicked', position);
+    EventBus.emit('minimap_clicked', position);
   }
 }
