@@ -7,6 +7,9 @@ import { TilemapActionBase } from './TilemapActionBase';
 import { TilemapActionElevation } from './TilemapActionElevation';
 import { TilemapActionRoad } from './TilemapActionRoad';
 import { TilemapActionTilePainter } from './TilemapActionTilePainter';
+import { TilemapActionBuilding } from './TilemapActionBuilding';
+import { Building } from './Building';
+import { BuildingFactory, BuildingTemplate } from './BuildingFactory';
 
 export interface TilemapUpdatedEvent {
   index: number;
@@ -28,9 +31,10 @@ export class Tilemap extends PIXI.Container {
   #tileIds: number[] = [];
   #tileElevations: number[] = [];
   readonly #terrainGraphics: PIXI.Graphics;
+  readonly #itemLayer: PIXI.Container;
   readonly #tileset: Tileset;
   #action: TilemapActionBase;
-  #hoveredTile: Record<string, number> = {};
+  #hoveredTile: Coords;
   #cursor;
   readonly #cursorTextures: Record<string, PIXI.Texture>;
   #isPressed = false;
@@ -46,6 +50,10 @@ export class Tilemap extends PIXI.Container {
 
     this.#terrainGraphics = new PIXI.Graphics();
     this.addChild(this.#terrainGraphics);
+
+    this.#itemLayer = new PIXI.Container();
+    this.#itemLayer.sortableChildren = true;
+    this.addChild(this.#itemLayer);
 
     const tw = this.#tileset.tileWidth;
     this.#cursorTextures = {};
@@ -80,14 +88,27 @@ export class Tilemap extends PIXI.Container {
 
     this.#action = null;
     EventBus.on('tile_id_selected', (tileId: number) => {
-      this.#action = new TilemapActionTilePainter(this, tileId);
+      this.setAction(new TilemapActionTilePainter(this, tileId));
     });
     EventBus.on('elevation_selected', (direction: string) => {
-      this.#action = new TilemapActionElevation(this, direction === 'raise' ? 1 : -1);
+      this.setAction(new TilemapActionElevation(this, direction === 'raise' ? 1 : -1));
     });
     EventBus.on('road_selected', () => {
-      this.#action = new TilemapActionRoad(this);
+      this.setAction(new TilemapActionRoad(this));
     });
+    EventBus.on('build', (key: string) => {
+      this.setAction(new TilemapActionBuilding(this, key));
+    });
+    EventBus.on('select_mode', () => {
+      this.setAction(null);
+    });
+  }
+
+  setAction(action: TilemapActionBase): void {
+    if (this.#action) {
+      this.#action.onActionDestroyed();
+    }
+    this.#action = action;
   }
 
   get tileIds(): number[] { return this.#tileIds; }
@@ -106,8 +127,12 @@ export class Tilemap extends PIXI.Container {
   onPointerMove(event: PIXI.InteractionEvent): void {
     const position = event.data.getLocalPosition(this);
     const newTileSelected = this.selectTileAtPosition(position.x, position.y);
-    if (newTileSelected && this.#isPressed && this.#action) {
-      this.#action.onTileDragged(this.#hoveredTile.i, this.#hoveredTile.j);
+    if (newTileSelected && this.#action) {
+      if (this.#isPressed) {
+        this.#action.onTileDragged(this.#hoveredTile.i, this.#hoveredTile.j);
+      } else {
+        this.#action.onTileHovered(this.#hoveredTile.i, this.#hoveredTile.j);
+      }
     }
   }
 
@@ -157,17 +182,18 @@ export class Tilemap extends PIXI.Container {
         this.drawTile(i, j, this.#tileIds[index]);
       }
     }
+    console.log(this.#terrainGraphics);
   }
 
   drawTile(i: number, j: number, tileId: number): void {
     // Tile position in the tilemap
-    const pos = this.coordsToPixels(i, j);
+    const { x, y } = this.coordsToPixels(i, j);
     const tileTexture = this.#tileset.getTileTexture(tileId);
     this.#terrainGraphics.beginTextureFill({
       texture: tileTexture,
-      matrix: new PIXI.Matrix().translate(pos.x, pos.y),
+      matrix: new PIXI.Matrix().translate(x, y),
     });
-    this.#terrainGraphics.drawRect(pos.x, pos.y, tileTexture.width, tileTexture.height + 0.5);
+    this.#terrainGraphics.drawRect(x, y, tileTexture.width, tileTexture.height + 0.5);
     this.#terrainGraphics.endFill();
   }
 
@@ -351,7 +377,7 @@ export class Tilemap extends PIXI.Container {
 
   setTileAt(i: number, j: number, tileId: number): void {
     const index = this.coordsToIndex(i, j);
-    if (index !== -1) {
+    if (index !== -1 && this.#tileIds[index] !== Tileset.Building) {
       tileId = Tileset.getElevatedTileId(tileId, this.#tileElevations[index]);
       if (this.#tileIds[index] !== tileId) {
         this.#tileIds[index] = tileId;
@@ -460,6 +486,25 @@ export class Tilemap extends PIXI.Container {
         } else if (Tileset.isRoad(tileId)) {
           this.setRoadAt(i, j);
         }
+      }
+    }
+  }
+
+  putBuilding(template: BuildingTemplate, i: number, j: number): void {
+    const building = new Building(template);
+    const pos = this.coordsToPixels(i, j);
+    building.moveTo(pos.x, pos.y);
+    building.sprite.zIndex = (i + template.th - 1) + (j + template.tw - 1);
+    building.sprite.interactive = true;
+    building.sprite.on('pointertap', () => {
+      console.log('building clicked!');
+    });
+    this.#itemLayer.addChild(building.sprite);
+
+    // Update terrain with a special tile, to flag covered tiles as non-constructible
+    for (let j2 = j; j2 < j + template.tw; ++j2) {
+      for (let i2 = i; i2 < i + template.th; ++i2) {
+        this.setTileAt(i2, j2, Tileset.Building);
       }
     }
   }

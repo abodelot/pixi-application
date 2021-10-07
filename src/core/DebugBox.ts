@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { EventBus } from '@src/core/EventBus';
 import { TilePointedEvent } from './Tilemap';
+import { Context } from './Context';
 
 /**
  * Display information on hovered tile
@@ -17,7 +18,7 @@ export class DebugBox extends PIXI.Container {
 
     this.#bg = new PIXI.Sprite(PIXI.Texture.WHITE);
     this.#bg.alpha = 0.5;
-    this.#bg.width = 150;
+    this.#bg.width = 190;
     this.#bg.height = 76;
     this.addChild(this.#bg);
 
@@ -33,7 +34,8 @@ export class DebugBox extends PIXI.Container {
     EventBus.on('tile_pointed', (info: TilePointedEvent) => {
       if (info) {
         this.visible = true;
-        this.#labelCoords.text = `Coords: i:${info.i}; j:${info.j}`;
+        this.#labelCoords.text =
+          `Coords: i:${info.i}; j:${info.j};(idx=${Context.tilemap.coordsToIndex(info.i, info.j)})`;
         this.#labelTileId.text = `Tile ID: ${info.tileId} (${info.tileDesc})`;
         this.#labelElevation.text = `Tile Elevation: ${info.elevation}`;
       } else {

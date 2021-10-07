@@ -52,6 +52,7 @@ export class Tileset {
   static DirtBase = 16;
   static SandBase = 32;
   static WaterBase = 48;
+  static Building = 80;
 
   readonly texture: PIXI.Texture;
   readonly tileWidth: number;
@@ -176,6 +177,6 @@ export class Tileset {
   }
 
   static isConstructible(tileId: number): boolean {
-    return !Tileset.isRoad(tileId) && !Tileset.isWater(tileId);
+    return !Tileset.isRoad(tileId) && !Tileset.isWater(tileId) && tileId !== Tileset.Building;
   }
 }

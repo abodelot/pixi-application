@@ -5,6 +5,7 @@ import { EditorScene } from '@src/scenes/EditorScene';
 import { EventBus } from './EventBus';
 import { Tileset } from './Tileset';
 import { IconToggleButton } from './IconToggleButton';
+import { BuildingFactory } from './BuildingFactory';
 import { Context } from './Context';
 
 /**
@@ -23,6 +24,16 @@ export class TileSelector extends PIXI.Container {
   constructor(tileset: Tileset) {
     super();
     const pos = { x: 16, y: 16 };
+
+    const buttonSelect = new Button('Select');
+    buttonSelect.position.set(pos.x, pos.y);
+    buttonSelect.on('pointertap', () => {
+      EventBus.emit('select_mode');
+    });
+    this.addChild(buttonSelect);
+
+    pos.y += buttonSelect.height;
+
     Object.entries(TileSelector.TILES).forEach(([name, tileId]) => {
       const button = new IconToggleButton(tileset.getTileTexture(tileId), name);
       button.position.set(pos.x, pos.y);
@@ -71,6 +82,19 @@ export class TileSelector extends PIXI.Container {
     pos.y += 60;
     button.position.set(pos.x, pos.y);
     this.addChild(button);
+
+    Object.keys(BuildingFactory.dict).forEach((key: string) => {
+      const buttonHouse = new Button(key);
+      buttonHouse.on('pointertap', () => {
+        if (this.#selectedButton) {
+          this.#selectedButton.release();
+        }
+        EventBus.emit('build', key);
+      });
+      pos.y += 24;
+      buttonHouse.position.set(pos.x, pos.y);
+      this.addChild(buttonHouse);
+    });
   }
 
   onButtonClicked(button: IconToggleButton, action: string, metadata: unknown = null): void {

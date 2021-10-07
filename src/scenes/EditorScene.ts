@@ -93,7 +93,7 @@ export class EditorScene extends BaseScene {
    * @param functionName: simplex|perlin
    */
   static createNewMap({
-    size = 100, scale = 80, minNoise = 0, maxNoise = 1, functionName = 'simplex',
+    size = 150, scale = 80, minNoise = 0, maxNoise = 1, functionName = 'simplex',
   } = {}): void {
     const tileIds: number[] = [];
     tileIds.length = size * size;

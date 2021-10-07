@@ -12,6 +12,7 @@ PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 PIXI.settings.ROUND_PIXELS = true;
 
 const images = [
+  'buildings.png',
   'cursor.png',
   'screenview-9box.png',
   'shadow-9box.png',

@@ -11,10 +11,17 @@ export abstract class TilemapActionBase {
     this.tilemap = tilemap;
   }
 
+  onActionDestroyed(): void {};
+
   /**
    * Pointer clicked on tile at i, j
    */
   abstract onTilePressed(i: number, j: number): void;
+
+  /**
+   * Pointer moved to tile at i, j
+   */
+  onTileHovered(i: number, j: number): void { }
 
   /**
    * Pointer moved to tile at i, j while being pressed
