@@ -134,8 +134,10 @@ export class Tileset {
       const j = Math.floor(tileId / this.#cols);
       const fullHeight = this.tileHeight + this.tileThickness;
       return new PIXI.Rectangle(
-        i * this.tileWidth, j * fullHeight,
-        this.tileWidth, fullHeight,
+        i * this.tileWidth,
+        j * fullHeight,
+        this.tileWidth,
+        fullHeight,
       );
     }
     throw Error(`tileId out of tileset range: ${tileId}`);

@@ -16,8 +16,10 @@ export function clamp(value: number, min: number, max: number): number {
  */
 export function normalize(
   val: number,
-  valmin: number, valmax: number,
-  min: number, max: number,
+  valmin: number,
+  valmax: number,
+  min: number,
+  max: number,
 ): number {
   val = clamp(val, valmin, valmax);
   return (((val - valmin) / (valmax - valmin)) * (max - min)) + min;

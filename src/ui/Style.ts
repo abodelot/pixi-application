@@ -42,6 +42,11 @@ class StyleDef {
         shadow: textures.shadow,
       },
     };
+
+    this.textures.radioButton = {
+      'default': new PIXI.Texture(tex, new PIXI.Rectangle(24, 0, 12, 12)),
+      'enabled': new PIXI.Texture(tex, new PIXI.Rectangle(36, 0, 12, 12)),
+    };
   }
 
   /**

@@ -50,9 +50,9 @@ export class ScrollContainer extends PIXI.Container {
       this.moveContentTo(pos.x, pos.y);
     });
 
-    Context.game.app.view.addEventListener(
-      'wheel', this.onMouseWheel.bind(this), { passive: false },
-    );
+    Context.game.app.view.addEventListener('wheel', this.onMouseWheel.bind(this), {
+      passive: false,
+    });
   }
 
   setContent(element: Tilemap): void {

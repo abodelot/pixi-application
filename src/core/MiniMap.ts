@@ -24,9 +24,8 @@ export class MiniMap extends PIXI.Container {
     this.createMiniMap(width, height);
 
     // Create screenView from viewPort dimensions
-    this.#screenView = new PIXI.NineSlicePlane(
-      Context.game.getTexture('screenview-9box.png'), 3, 3, 3, 3,
-    );
+    const texture = Context.game.getTexture('screenview-9box.png');
+    this.#screenView = new PIXI.NineSlicePlane(texture, 3, 3, 3, 3);
     this.#screenView.width = Context.viewPort.width * this.#ratio;
     this.#screenView.height = Context.viewPort.height * this.#ratio;
     this.addChild(this.#screenView);

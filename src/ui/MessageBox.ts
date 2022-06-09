@@ -62,8 +62,15 @@ export class MessageBox extends PIXI.Container {
 
     this.#shadow = Style.createShadow(totalWidth, this.#bg.height);
 
-    this.addChild(this.#shadow, this.#bg, this.#header, this.#headerText,
-      this.#text, this.#buttonOk, this.#buttonCancel);
+    this.addChild(
+      this.#shadow,
+      this.#bg,
+      this.#header,
+      this.#headerText,
+      this.#text,
+      this.#buttonOk,
+      this.#buttonCancel,
+    );
 
     // Prevent from triggering click events on element behind the MessageBox
     this.interactive = true;

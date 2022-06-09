@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
 
 import { Button } from '@src/ui/Button';
+import { RadioGroup } from '@src/ui/RadioGroup';
 import { EditorScene } from '@src/scenes/EditorScene';
 import { EventBus } from './EventBus';
 import { Tileset } from './Tileset';
-import { IconToggleButton } from './IconToggleButton';
 import { Context } from './Context';
 
 /**
@@ -18,44 +18,31 @@ export class TileSelector extends PIXI.Container {
     'Water': Tileset.WaterBase,
   };
 
-  #selectedButton?: IconToggleButton;
-
   constructor(tileset: Tileset) {
     super();
     const pos = { x: 16, y: 16 };
-    Object.entries(TileSelector.TILES).forEach(([name, tileId]) => {
-      const button = new IconToggleButton(tileset.getTileTexture(tileId), name);
-      button.position.set(pos.x, pos.y);
-      // Stack buttons vertically
-      pos.y += button.height;
-      this.addChild(button);
-      button.on('pointertap', () => {
-        this.onButtonClicked(button, 'set_tile', tileId);
-      });
-    });
 
     const tools = Context.game.getTexture('tools.png').baseTexture;
-    const buttonMinus = new IconToggleButton(
-      new PIXI.Texture(tools, new PIXI.Rectangle(0, 0, 32, 20)), 'Dig',
-    );
-    pos.y += 30;
-    buttonMinus.position.set(pos.x, pos.y);
-    buttonMinus.on('pointertap', () => { this.onButtonClicked(buttonMinus, 'dig'); });
-    this.addChild(buttonMinus);
+    const iconDig = new PIXI.Texture(tools, new PIXI.Rectangle(0, 0, 32, 20));
+    const iconRaise = new PIXI.Texture(tools, new PIXI.Rectangle(32, 0, 32, 20));
+    const iconRoad = tileset.getTileTexture(64);
 
-    const buttonPlus = new IconToggleButton(
-      new PIXI.Texture(tools, new PIXI.Rectangle(32, 0, 32, 20)), 'Raise',
-    );
-    pos.y += buttonMinus.height;
-    buttonPlus.position.set(pos.x, pos.y);
-    buttonPlus.on('pointertap', () => { this.onButtonClicked(buttonPlus, 'raise'); });
-    this.addChild(buttonPlus);
+    const group = new RadioGroup();
+    group.position.set(pos.x, pos.y);
 
-    const buttonRoad = new IconToggleButton(tileset.getTileTexture(64), 'Road');
-    pos.y += 60;
-    buttonRoad.position.set(pos.x, pos.y);
-    buttonRoad.on('pointertap', () => { this.onButtonClicked(buttonRoad, 'set_road'); });
-    this.addChild(buttonRoad);
+    Object.entries(TileSelector.TILES).forEach(([name, tileId]) => {
+      group.addButton(name, tileset.getTileTexture(tileId))
+        .onChecked(() => EventBus.emit('tile_id_selected', tileId));
+    });
+
+    group.addButton('Road', iconRoad)
+      .onChecked(() => EventBus.emit('road_selected'));
+    group.addButton('Dig', iconDig)
+      .onChecked(() => EventBus.emit('elevation_selected', 'dig'));
+    group.addButton('Raise', iconRaise)
+      .onChecked(() => EventBus.emit('elevation_selected', 'raise'));
+
+    this.addChild(group);
 
     const button = new Button('Random map');
     button.on('pointertap', () => {
@@ -65,36 +52,13 @@ export class TileSelector extends PIXI.Container {
           document.querySelector('#popup-wrapper').innerHTML = html;
         });
     });
+
     document.addEventListener('map_popup_submit', ((event: CustomEvent) => {
       EditorScene.createNewMap(event.detail);
     }) as EventListener);
-    pos.y += 60;
+
+    pos.y += group.height + 16;
     button.position.set(pos.x, pos.y);
     this.addChild(button);
-  }
-
-  onButtonClicked(button: IconToggleButton, action: string, metadata: unknown = null): void {
-    if (this.#selectedButton) {
-      this.#selectedButton.release();
-    }
-    button.press();
-    this.#selectedButton = button;
-
-    switch (action) {
-      case 'raise':
-        EventBus.emit('elevation_selected', 'raise');
-        break;
-      case 'dig':
-        EventBus.emit('elevation_selected', 'dig');
-        break;
-      case 'set_tile':
-        EventBus.emit('tile_id_selected', metadata);
-        break;
-      case 'set_road':
-        EventBus.emit('road_selected');
-        break;
-      default:
-        console.error('Unsupported button metadata:', metadata);
-    }
   }
 }
