@@ -16,7 +16,7 @@ export class Button extends PIXI.Container {
 
     // Text alignment
     this.#text.x = (Style.buttonWidth - this.#text.width) / 2;
-    this.#text.y = (Style.buttonHeight - this.#text.height) / 2;
+    this.#text.y = Style.padding;
 
     this.addChild(this.#bg, this.#text);
     // Events

@@ -17,7 +17,7 @@ export class Toolbar extends PIXI.Container {
   constructor(width: number, height: number) {
     super();
 
-    this.#bg = Style.createNineSlicePane(Style.textures.tab.panel);
+    this.#bg = Style.createNineSlicePane(Style.textures.button.normal);
     this.#bg.width = width;
     this.#bg.height = height;
 

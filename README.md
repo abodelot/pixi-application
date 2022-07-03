@@ -10,7 +10,7 @@ Install dependencies:
 
 Start development server:
 
-    yarn run serve
+    yarn run dev
 
 Run eslint:
 

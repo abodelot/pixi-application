@@ -17,7 +17,7 @@ const images = [
   'shadow-9box.png',
   'tileset.png',
   'tools.png',
-  'ui-9box.png',
+  'win95.png',
 ];
 
 const sounds = [
@@ -33,13 +33,13 @@ window.onload = () => {
     width: window.innerWidth,
     height: window.innerHeight,
     resolution: window.devicePixelRatio,
-    backgroundColor: 0xb8b8b8,
+    backgroundColor: 0xc0c0c0,
   });
 
   Context.game = new Game(app);
   Context.game.loadAssets(images, () => {
     Style.setTextures({
-      button: Context.game.getTexture('ui-9box.png'),
+      atlas: Context.game.getTexture('win95.png'),
       shadow: Context.game.getTexture('shadow-9box.png'),
     });
 

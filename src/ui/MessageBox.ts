@@ -18,9 +18,9 @@ export class MessageBox extends PIXI.Container {
 
     let y = 0;
     this.#header = new PIXI.Sprite(PIXI.Texture.WHITE);
-    this.#header.height = Style.baseHeight;
+    this.#header.height = Style.dialogHeaderHeight;
     this.#header.tint = Style.bgColorSelected;
-    this.#header.position.set(2, 2);
+    this.#header.position.set(Style.nineBoxBorder, Style.nineBoxBorder);
 
     this.#headerText = new PIXI.Text('Message', {
       fontFamily: Style.fontFamily,
@@ -28,18 +28,21 @@ export class MessageBox extends PIXI.Container {
       fill: Style.textColorSelected,
     });
 
-    this.#headerText.position.set(Style.padding, Style.padding);
+    this.#headerText.position.set(
+      Style.nineBoxBorder + Style.padding,
+      Style.nineBoxBorder + (Style.dialogHeaderHeight - this.#headerText.height) / 2,
+    );
     this.#header.addChild(this.#headerText);
 
     this.#text = Style.createText(message);
-    y = this.#header.height + Style.boxPadding;
+    y = Style.nineBoxBorder + this.#header.height + Style.boxPadding;
     this.#text.position.set(Style.boxPadding, y);
 
     const totalWidth = Math.max(
       this.#text.width + Style.boxPadding * 2,
       Style.buttonWidth * 2 + Style.margin + Style.boxPadding * 2,
     );
-    this.#header.width = totalWidth - 4;
+    this.#header.width = totalWidth - Style.nineBoxBorder * 2;
 
     this.#buttonOk = new Button('OK');
     this.#buttonOk.enable(false);
@@ -56,7 +59,7 @@ export class MessageBox extends PIXI.Container {
       y,
     );
 
-    this.#bg = Style.createNineSlicePane(Style.textures.misc.panel);
+    this.#bg = Style.createNineSlicePane(Style.textures.button.normal);
     this.#bg.width = totalWidth;
     this.#bg.height = y + this.#buttonOk.height + Style.boxPadding;
 

@@ -1,5 +1,10 @@
 import * as PIXI from 'pixi.js';
 
+import { ContextMenu } from '@src/ui/ContextMenu';
+import { ScrollContainer } from '@src/ui/ScrollContainer';
+import { Style } from '@src/ui/Style';
+import { TabContainer } from '@src/ui/TabContainer';
+
 import { Tileset, MAX_ELEVATION } from '@src/core/Tileset';
 import { Tilemap } from '@src/core/Tilemap';
 import { TileSelector } from '@src/core/TileSelector';
@@ -8,16 +13,13 @@ import { DebugBox } from '@src/core/DebugBox';
 import { Context } from '@src/core/Context';
 import { Toolbar } from '@src/core/Toolbar';
 import { clamp, normalize } from '@src/core/Utils';
-import { ContextMenu } from '@src/ui/ContextMenu';
-import { ScrollContainer } from '@src/ui/ScrollContainer';
-import { TabContainer } from '@src/ui/TabContainer';
 import { Perlin } from '../vendor/PerlinNoise';
 
 import { BaseScene } from './BaseScene';
 import { MainMenuScene } from './MainMenuScene';
 
 const TOOLBAR_HEIGHT = 200;
-const SIDEBAR_WIDTH = 260;
+const SIDEBAR_WIDTH = 260 + Style.padding * 2 + Style.tabContentPadding * 2;
 
 export class EditorScene extends BaseScene {
   #tabs: TabContainer;
@@ -27,7 +29,8 @@ export class EditorScene extends BaseScene {
   constructor() {
     super();
 
-    this.#tabs = new TabContainer(SIDEBAR_WIDTH, window.innerHeight - TOOLBAR_HEIGHT);
+    this.#tabs = new TabContainer(SIDEBAR_WIDTH - 16, window.innerHeight - TOOLBAR_HEIGHT - 16);
+    this.#tabs.position.set(8, 8);
     this.container.addChild(this.#tabs);
 
     const tileset = new Tileset(Context.game.getTexture('tileset.png'), 32, 16, 4);

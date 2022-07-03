@@ -11,30 +11,46 @@ export class Tab extends PIXI.Container {
     super();
 
     this.#text = Style.createText(name);
+    this.#text.x = Style.padding;
     this.#bg = Style.createNineSlicePane(Style.textures.tab.normal);
-    const padx = Style.padding * 2; // inner horizontal padding
-    this.#bg.width = padx * 2 + this.#text.width;
-    this.#bg.height = Style.buttonHeight;
-
-    this.#text.x = padx;
-    this.#text.y = (Style.buttonHeight - this.#text.height) / 2;
+    this.unselect();
 
     // Events
-    this.#pressed = false;
     this.interactive = true;
-    this.on('onpointerout', this.onPointerOut.bind(this));
+    this.on('pointerout', this.onPointerOut.bind(this));
     this.on('pointerover', this.onPointerOver.bind(this));
     this.addChild(this.#bg, this.#text);
   }
 
-  press(): void {
-    this.#pressed = true;
-    this.#bg.texture = Style.textures.tab.focus;
+  getBaseWidth(): number {
+    return this.#text.width + Style.padding * 2;
   }
 
-  release(): void {
+  select(): void {
+    this.#pressed = true;
+    this.#bg.texture = Style.textures.tab.focus;
+    // When selected, the tab grows horizontally (tabBorder * 2), expanding over the neighbor tabs
+    // and vertically (tabBorder), pulling the text higher
+    this.#bg.x = -Style.tabBorder;
+    this.#bg.y = -Style.tabBorder;
+    this.#bg.width = this.getBaseWidth() + Style.tabBorder * 2;
+    this.#bg.height = Style.buttonHeight + Style.tabBorder;
+    this.#text.y = (Style.buttonHeight - this.#text.height) / 2 - Style.tabBorder;
+
+    this.zIndex = 1;
+  }
+
+  unselect(): void {
     this.#pressed = false;
     this.#bg.texture = Style.textures.tab.normal;
+    // Restore the tab original position and size
+    this.#bg.width = this.getBaseWidth();
+    this.#bg.height = Style.buttonHeight;
+    this.#bg.x = 0;
+    this.#bg.y = 0;
+    this.#text.y = (Style.buttonHeight - this.#text.height) / 2;
+
+    this.zIndex = 0;
   }
 
   onPointerOver(): void {

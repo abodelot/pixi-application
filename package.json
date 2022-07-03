@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "build": "webpack --mode production --config webpack.config.js && cp index.html dist && cp -r assets dist",
-    "serve": "webpack serve --config webpack.config.js",
+    "dev": "webpack serve --config webpack.config.js",
     "lint": "eslint src"
   },
   "author": "Alexandre Bodelot <alexandre.bodelot@gmail.com>",

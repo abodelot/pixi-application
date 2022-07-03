@@ -1,10 +1,9 @@
 import * as PIXI from 'pixi.js';
 
 class StyleDef {
-  padding = 4;
-  margin = 4;
+  padding = 5;
+  margin = 5;
   nineBoxBorder = 3;
-  bgColor = 0xb8b8b8;
   bgColorSelected = 0x000080;
   fontFamily = 'Sans-Serif';
   fontSize = 12;
@@ -16,6 +15,9 @@ class StyleDef {
   boxPadding = 12;
   shadowRadius = 12;
   baseHeight = 22;
+  tabBorder = 2;
+  tabContentPadding = 15;
+  dialogHeaderHeight = 18;
   textures: Record<string, Record<string, PIXI.Texture>> = {};
 
   /**
@@ -23,29 +25,28 @@ class StyleDef {
    * @param textures: dict<string, PIXI.Texture>
    */
   setTextures(textures: Record<string, PIXI.Texture>) {
-    const tex = textures.button.baseTexture;
+    const tex = textures.atlas.baseTexture;
 
     this.textures = {
       button: {
-        normal: new PIXI.Texture(tex, new PIXI.Rectangle(0, 0, 12, 12)),
-        hover: new PIXI.Texture(tex, new PIXI.Rectangle(0, 12, 12, 12)),
-        focus: new PIXI.Texture(tex, new PIXI.Rectangle(0, 24, 12, 12)),
+        normal: new PIXI.Texture(tex, new PIXI.Rectangle(0, 0, 9, 9)),
+        hover: new PIXI.Texture(tex, new PIXI.Rectangle(9, 0, 9, 9)),
+        focus: new PIXI.Texture(tex, new PIXI.Rectangle(18, 0, 9, 9)),
       },
       tab: {
-        normal: new PIXI.Texture(tex, new PIXI.Rectangle(12, 0, 12, 12)),
-        hover: new PIXI.Texture(tex, new PIXI.Rectangle(12, 12, 12, 12)),
-        focus: new PIXI.Texture(tex, new PIXI.Rectangle(12, 24, 12, 12)),
-        panel: new PIXI.Texture(tex, new PIXI.Rectangle(12, 36, 12, 12)),
+        normal: new PIXI.Texture(tex, new PIXI.Rectangle(0, 9, 9, 9)),
+        hover: new PIXI.Texture(tex, new PIXI.Rectangle(9, 9, 9, 9)),
+        focus: new PIXI.Texture(tex, new PIXI.Rectangle(18, 9, 9, 9)),
+      },
+      radioButton: {
+        default: new PIXI.Texture(tex, new PIXI.Rectangle(0, 18, 12, 12)),
+        enabled: new PIXI.Texture(tex, new PIXI.Rectangle(12, 18, 12, 12)),
+        bgDefault: new PIXI.Texture(tex, new PIXI.Rectangle(24, 18, 12, 12)),
+        bgEnabled: new PIXI.Texture(tex, new PIXI.Rectangle(36, 18, 12, 12)),
       },
       misc: {
-        panel: new PIXI.Texture(tex, new PIXI.Rectangle(0, 36, 12, 12)),
         shadow: textures.shadow,
       },
-    };
-
-    this.textures.radioButton = {
-      'default': new PIXI.Texture(tex, new PIXI.Rectangle(24, 0, 12, 12)),
-      'enabled': new PIXI.Texture(tex, new PIXI.Rectangle(36, 0, 12, 12)),
     };
   }
 

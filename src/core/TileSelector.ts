@@ -2,6 +2,8 @@ import * as PIXI from 'pixi.js';
 
 import { Button } from '@src/ui/Button';
 import { RadioGroup } from '@src/ui/RadioGroup';
+import { Style } from '@src/ui/Style';
+
 import { EditorScene } from '@src/scenes/EditorScene';
 import { EventBus } from './EventBus';
 import { Tileset } from './Tileset';
@@ -20,7 +22,6 @@ export class TileSelector extends PIXI.Container {
 
   constructor(tileset: Tileset) {
     super();
-    const pos = { x: 16, y: 16 };
 
     const tools = Context.game.getTexture('tools.png').baseTexture;
     const iconDig = new PIXI.Texture(tools, new PIXI.Rectangle(0, 0, 32, 20));
@@ -28,8 +29,6 @@ export class TileSelector extends PIXI.Container {
     const iconRoad = tileset.getTileTexture(64);
 
     const group = new RadioGroup();
-    group.position.set(pos.x, pos.y);
-
     Object.entries(TileSelector.TILES).forEach(([name, tileId]) => {
       group.addButton(name, tileset.getTileTexture(tileId))
         .onChecked(() => EventBus.emit('tile_id_selected', tileId));
@@ -44,8 +43,8 @@ export class TileSelector extends PIXI.Container {
 
     this.addChild(group);
 
-    const button = new Button('Random map');
-    button.on('pointertap', () => {
+    const btnNewMap = new Button('Random map');
+    btnNewMap.on('pointertap', () => {
       fetch('assets/html/map_popup.html')
         .then((response) => response.text())
         .then((html) => {
@@ -57,8 +56,7 @@ export class TileSelector extends PIXI.Container {
       EditorScene.createNewMap(event.detail);
     }) as EventListener);
 
-    pos.y += group.height + 16;
-    button.position.set(pos.x, pos.y);
-    this.addChild(button);
+    btnNewMap.position.y = group.y + group.height + Style.tabContentPadding;
+    this.addChild(btnNewMap);
   }
 }
