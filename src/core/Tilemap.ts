@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Context } from './Context';
-import { Coords, Point } from './Types';
+import { Coords, Point, Rect } from './Types';
 import { Tileset, MAX_ELEVATION } from './Tileset';
 import { EventBus } from './EventBus';
 import { TilemapActionBase } from './TilemapActionBase';
@@ -9,8 +9,9 @@ import { TilemapActionRoad } from './TilemapActionRoad';
 import { TilemapActionTilePainter } from './TilemapActionTilePainter';
 
 export interface TilemapUpdatedEvent {
-  index: number;
-  tileId: number;
+  i: number;
+  j: number;
+  tid: number;
 }
 
 export interface TilePointedEvent {
@@ -25,17 +26,17 @@ export class Tilemap extends PIXI.Container {
   #background: PIXI.Sprite;
   #cols = 0;
   #rows = 0;
-  #tileIds: number[] = [];
-  #tileElevations: number[] = [];
+  #tileIds: number[][] = [];
   readonly #terrainGraphics: PIXI.Graphics;
   readonly #tileset: Tileset;
-  #action: TilemapActionBase;
+  // Click behavior
+  #action: TilemapActionBase = new TilemapActionTilePainter(this, Tileset.TILE_GRASS);
   #hoveredTile: Record<string, number> = {};
   #cursor;
-  readonly #cursorTextures: Record<string, PIXI.Texture>;
   #isPressed = false;
   pixelWidth = 0;
   pixelHeight = 0;
+  #zVertices: number[][] = [];
 
   constructor(tileset: Tileset) {
     super();
@@ -47,26 +48,7 @@ export class Tilemap extends PIXI.Container {
     this.#terrainGraphics = new PIXI.Graphics();
     this.addChild(this.#terrainGraphics);
 
-    const tw = this.#tileset.tileWidth;
-    this.#cursorTextures = {};
-    const cursorTexture = Context.game.getTexture('cursor.png');
-    // Extract cursors from the cursor spritesheet.
-    // Cursors are 'precut' to fit the hovered tile, even when the tile is
-    // partially hidden by neighbor tiles with a higher elevation:
-    // - East (i+1, with z+1)
-    // - West (j+1, with z+1),
-    // - South (i+1, j+1 with z+1)
-    // - any combination of those three directions
-    // - South x2 (i+1, j+1, with z+2)
-    // The cursor can then be drawn on top of the tilemap, without hidding
-    // the neighbor tiles which are supposed to look in front of the cursor.
-    ['FULL', 'E', 'W', 'ES', 'SW', 'S', 'EW', 'SS'].forEach((key, index) => {
-      this.#cursorTextures[key] = new PIXI.Texture(
-        cursorTexture.baseTexture,
-        new PIXI.Rectangle(tw * index, 0, tw, cursorTexture.height),
-      );
-    });
-    this.#cursor = new PIXI.Sprite(this.#cursorTextures.FULL);
+    this.#cursor = new PIXI.Sprite(this.tileset.getTileTexture(Tileset.Cursor['0000']));
     this.addChild(this.#cursor);
 
     // Allow mouse interaction
@@ -78,7 +60,6 @@ export class Tilemap extends PIXI.Container {
 
     this.#hoveredTile = null;
 
-    this.#action = null;
     EventBus.on('tile_id_selected', (tileId: number) => {
       this.#action = new TilemapActionTilePainter(this, tileId);
     });
@@ -88,15 +69,21 @@ export class Tilemap extends PIXI.Container {
     EventBus.on('road_selected', () => {
       this.#action = new TilemapActionRoad(this);
     });
+    EventBus.on('grass_selected', () => {
+      this.#action = new TilemapActionTilePainter(this, Tileset.TILE_GRASS);
+    });
+    EventBus.on('dirt_selected', () => {
+      this.#action = new TilemapActionTilePainter(this, Tileset.TILE_DIRT);
+    });
   }
 
-  get tileIds(): number[] { return this.#tileIds; }
+  get tileIds(): number[][] { return this.#tileIds; }
   get nbCols(): number { return this.#cols; }
   get nbRows(): number { return this.#rows; }
   get tileset(): Tileset { return this.#tileset; }
 
   onPointerDown(event: PIXI.InteractionEvent): void {
-    // Left click
+    // Left click: propagate pressed tile to action
     if (event.data.button === 0 && this.#hoveredTile && this.#action) {
       this.#action.onTilePressed(this.#hoveredTile.i, this.#hoveredTile.j);
       this.#isPressed = true;
@@ -123,27 +110,43 @@ export class Tilemap extends PIXI.Container {
   /**
    * Load a tilemap
    * @param tileIds: Array of ids, sized cols*rows
-   * @param tileElevations: Array of elevations, sized cols*rows
+   * @param zVertices: Array of elevations, sized (cols+1) * (rows+1)
    * @param cols: number of cols
    * @param rows: number of rows
    */
-  load(tileIds: number[], tileElevations: number[], cols: number, rows: number): void {
+  load(tileIds: number[][], zVertices: number[][], cols: number, rows: number): void {
+    if (tileIds.length !== cols) throw Error('bad tileIds width');
+    if (tileIds[0].length !== rows) throw Error('bad tileIds height');
+    if (zVertices.length !== cols + 1) throw Error('bad zVertices width');
+    if (zVertices[0].length !== rows + 1) throw Error('bad zVertices height');
+
     this.#cols = cols;
     this.#rows = rows;
     this.#tileIds = tileIds;
-    this.#tileElevations = tileElevations;
+    this.#zVertices = zVertices;
 
     // Compute size of the bounding box
-    this.pixelWidth = (cols + rows) * this.#tileset.tileWidth / 2;
-    this.pixelHeight = (cols + rows) * this.#tileset.tileHeight / 2;
+    this.pixelWidth = (cols + rows) * this.tileset.tileWidth / 2;
+    this.pixelHeight = (cols + rows) * this.tileset.tileHeight / 2;
 
     // Resize the tilemap background sprite
     this.#background.width = this.pixelWidth;
     this.#background.height = this.pixelHeight;
 
-    this.putSpecialTiles();
     this.redrawTilemap();
     this.refreshPointerSelection();
+  }
+
+  /**
+   * Get the four surrounding Z values of a tile
+   * @return [top, right, bottom, left]
+   */
+  getZCorners(i: number, j: number): [number, number, number, number] {
+    const top = this.#zVertices[i][j];
+    const left = this.#zVertices[i][j + 1];
+    const bottom = this.#zVertices[i + 1][j + 1];
+    const right = this.#zVertices[i + 1][j];
+    return [top, right, bottom, left];
   }
 
   /**
@@ -151,10 +154,46 @@ export class Tilemap extends PIXI.Container {
    */
   redrawTilemap(): void {
     this.#terrainGraphics.clear();
-    for (let j = 0; j < this.#rows; ++j) {
-      for (let i = 0; i < this.#cols; ++i) {
-        const index = j * this.#cols + i;
-        this.drawTile(i, j, this.#tileIds[index]);
+    this.drawTilemap({
+      x1: 0,
+      y1: 0,
+      x2: this.#cols,
+      y2: this.#rows,
+    });
+  }
+
+  /**
+   * Partial redraw from x1, y1 (top left) to x2, y2 (bottom right)
+   */
+  drawTilemap(r: Rect) {
+    this.putSpecialTiles();
+
+    for (let i = r.x1; i <= r.x2; ++i) {
+      for (let j = r.y1; j <= r.y2; ++j) {
+        if (i < 0 || i >= this.#cols || j < 0 || j >= this.#rows) {
+          continue;
+        }
+        const tid = this.#tileIds[i][j];
+        let tid2 = tid;
+        // Update tid with special tile
+        if (this.tileset.isRoad(tid)) {
+          const sloppedId = this.tileset.getSlopedRoadTileId(...this.getZCorners(i, j));
+          if (sloppedId !== -1) {
+            tid2 = sloppedId;
+          }
+        } else {
+          tid2 = tid2 - tid2 % 16 + this.tileset.getTileSlopeOffset(...this.getZCorners(i, j));
+          if (tid2 === undefined) {
+            console.error('key not in Slopes');
+            tid2 = Tileset.Slopes['0000'][0];
+          }
+        }
+        if (tid2 !== tid) {
+          // redraw minimap
+          EventBus.emit('tilemap_updated', { i, j, tid: tid2 });
+          this.#tileIds[i][j] = tid2;
+        }
+        this.drawTile(i, j, tid2);
       }
     }
   }
@@ -162,12 +201,12 @@ export class Tilemap extends PIXI.Container {
   drawTile(i: number, j: number, tileId: number): void {
     // Tile position in the tilemap
     const pos = this.coordsToPixels(i, j);
-    const tileTexture = this.#tileset.getTileTexture(tileId);
+    const tileTexture = this.tileset.getTileTexture(tileId);
     this.#terrainGraphics.beginTextureFill({
       texture: tileTexture,
       matrix: new PIXI.Matrix().translate(pos.x, pos.y),
     });
-    this.#terrainGraphics.drawRect(pos.x, pos.y, tileTexture.width, tileTexture.height + 0.5);
+    this.#terrainGraphics.drawRect(pos.x, pos.y, tileTexture.width, tileTexture.height);
     this.#terrainGraphics.endFill();
   }
 
@@ -179,7 +218,7 @@ export class Tilemap extends PIXI.Container {
     if (localStorage.map) {
       try {
         const data = JSON.parse(localStorage.map);
-        this.load(data.tiles, data.elevations, data.width, data.height);
+        this.load(data.tiles, data.zVertices, data.width, data.height);
       } catch (e) {
         console.error('Cannot load map from localStorage');
         console.error(e);
@@ -196,7 +235,7 @@ export class Tilemap extends PIXI.Container {
     const data = {
       width: this.#cols,
       height: this.#rows,
-      elevations: this.#tileElevations,
+      zVertices: this.#zVertices,
       tiles: this.#tileIds,
     };
 
@@ -209,11 +248,12 @@ export class Tilemap extends PIXI.Container {
    * @return {i, j}
    */
   pixelsToCoords(x: number, y: number): Coords {
-    x -= this.#rows * this.#tileset.tileWidth * 0.5;
+    x -= this.#rows * this.tileset.tileWidth * 0.5;
+    y -= this.tileset.tileHeight * 0.5;
 
     return {
-      i: Math.floor((y + Math.floor(x / 2)) / this.#tileset.tileHeight),
-      j: Math.floor((y - Math.floor(x / 2)) / this.#tileset.tileHeight),
+      i: Math.floor((y + Math.floor(x / 2)) / this.tileset.tileHeight),
+      j: Math.floor((y - Math.floor(x / 2)) / this.tileset.tileHeight),
     };
   }
 
@@ -222,7 +262,7 @@ export class Tilemap extends PIXI.Container {
    * @return {i, j}
    */
   pixelsToCoordsWithElevation(x: number, y: number): Coords {
-    const thickness = this.#tileset.tileThickness;
+    const thickness = this.tileset.tileThickness;
 
     for (let layer = MAX_ELEVATION; layer > 0; --layer) {
       // Tile at elevation N can hide tiles at elevation N-1
@@ -230,8 +270,7 @@ export class Tilemap extends PIXI.Container {
       // The mouse y position is adjusted according to the elevation.
       const y2 = y + (layer * thickness);
       const { i, j } = this.pixelsToCoords(x, y2);
-      const index = this.coordsToIndex(i, j);
-      const elevation = this.#tileElevations[index];
+      const elevation = this.getElevationAt(i, j);
       if (elevation === layer) {
         return { i, j };
       }
@@ -243,8 +282,9 @@ export class Tilemap extends PIXI.Container {
     if (elevation > 0) {
       // The tile located at the mouse position is above elevation 0, but we did not
       // match any when scanning the elevation layers above!
-      // This happens when mouse is hovering the "thick" side of a tile.
       // That's because pixelsToCoords only works with the "top" side of the tile.
+      // console.error(elevation);
+      // FIXME
       return null;
     }
     return { i, j };
@@ -256,22 +296,12 @@ export class Tilemap extends PIXI.Container {
    */
   coordsToPixels(i: number, j: number): Point {
     return {
-      x: (i * this.#tileset.tileWidth * 0.5) - (j * this.#tileset.tileWidth * 0.5)
-        + ((this.#rows - 1) * this.#tileset.tileWidth * 0.5),
-      y: (i * this.#tileset.tileHeight * 0.5) + (j * this.#tileset.tileHeight * 0.5)
+      x: (i * this.tileset.tileWidth * 0.5) - (j * this.tileset.tileWidth * 0.5)
+        + ((this.#rows - 1) * this.tileset.tileWidth * 0.5),
+      y: (i * this.tileset.tileHeight * 0.5) + (j * this.tileset.tileHeight * 0.5)
         // Move upwards on y-axis to apply elevation
-        - this.#tileset.tileThickness * this.getElevationAt(i, j),
+        - this.tileset.tileThickness * this.getElevationAt(i, j),
     };
-  }
-
-  /**
-   * Convert 2D coords to 1D index
-   */
-  coordsToIndex(i: number, j: number): number {
-    if (i >= 0 && i < this.#cols && j >= 0 && j < this.#rows) {
-      return j * this.#cols + i;
-    }
-    return -1;
   }
 
   /**
@@ -284,7 +314,7 @@ export class Tilemap extends PIXI.Container {
     // Check cursor is over tilemap area
     if (x >= 0 && y >= 0 && x < this.pixelWidth && y < this.pixelHeight) {
       const res = this.pixelsToCoordsWithElevation(x, y);
-      if (res == null) {
+      if (res === null) {
         this.#hoveredTile = null;
         this.#cursor.visible = false;
         EventBus.emit('tile_pointed', null);
@@ -304,11 +334,10 @@ export class Tilemap extends PIXI.Container {
         this.#cursor.texture = this.getTileCursorTexture(i, j);
         this.#cursor.visible = true;
 
-        const index = this.coordsToIndex(i, j);
-        const tileId = this.tileIds[index];
-        const elevation = this.#tileElevations[index];
+        const tileId = this.tileIds[i][j];
+        const elevation = this.getElevationAt(i, j);
         EventBus.emit('tile_pointed', {
-          tileId, tileDesc: Tileset.tileDesc(tileId), elevation, i, j,
+          tileId, tileDesc: this.tileset.tileDesc(tileId), elevation, i, j,
         });
         return true;
       }
@@ -330,69 +359,116 @@ export class Tilemap extends PIXI.Container {
    * @return PIXI.Texture
    */
   getTileCursorTexture(i: number, j: number): PIXI.Texture {
-    const elevation = this.getElevationAt(i, j);
-    // Adapt cursor image according to elevation neighbors
-    let z;
-    const hideWest = (z = this.getElevationAt(i, j + 1)) && z && z > elevation;
-    const hideEast = (z = this.getElevationAt(i + 1, j)) && z && z > elevation;
-    const hideSouth = (z = this.getElevationAt(i + 1, j + 1)) && z && z > elevation;
-    // South2: check if higher by at least 2 units of elevation
-    const hideSouth2 = (z = this.getElevationAt(i + 1, j + 1)) && z && z > elevation + 1;
-
-    if (hideSouth2) return this.#cursorTextures.SS;
-    if (hideEast && hideWest) return this.#cursorTextures.EW;
-    if (hideEast && hideSouth) return this.#cursorTextures.ES;
-    if (hideWest && hideSouth) return this.#cursorTextures.SW;
-    if (hideEast) return this.#cursorTextures.E;
-    if (hideSouth) return this.#cursorTextures.S;
-    if (hideWest) return this.#cursorTextures.W;
-    return this.#cursorTextures.FULL;
+    const [top, right, bottom, left] = this.getZCorners(i, j);
+    return this.tileset.getCursorTexture(top, right, bottom, left);
   }
 
-  setTileAt(i: number, j: number, tileId: number): void {
-    const index = this.coordsToIndex(i, j);
-    if (index !== -1) {
-      tileId = Tileset.getElevatedTileId(tileId, this.#tileElevations[index]);
-      if (this.#tileIds[index] !== tileId) {
-        this.#tileIds[index] = tileId;
-        EventBus.emit('tilemap_updated', { index, tileId });
+  setTileAt(i: number, j: number, tid: number): void {
+    if (i >= 0 && i < this.#cols && j >= 0 && j < this.#rows) {
+      if (this.#tileIds[i][j] !== tid) {
+        this.#tileIds[i][j] = tid;
+        EventBus.emit('tilemap_updated', { i, j, tid });
       }
     }
   }
 
-  getTileAt(i: number, j: number): number {
-    const index = this.coordsToIndex(i, j);
-    if (index !== -1) {
-      return this.#tileIds[index];
-    }
-    return null;
-  }
-
-  getElevationAt(i: number, j: number): number {
-    const index = this.coordsToIndex(i, j);
-    if (index !== -1) {
-      return this.#tileElevations[index];
+  getElevationAt(i: number, j: number, fn = Math.min): number {
+    if (i >= 0 && i < this.#cols && j >= 0 && j < this.#rows) {
+      // Tile elevation is the min (defautl) Z value of the 4 corners
+      return fn(...this.getZCorners(i, j));
     }
     return -1;
   }
 
-  digAt(index: number): void {
-    this.#tileElevations[index]--;
+  increaseZ(i: number, j: number) {
+    // Tile elevation is the lowest Z value of the 4 corners
+    const corners = this.getZCorners(i, j);
+    const newZ = Math.min(...corners) + 1;
+
+    // Update Z vertices
+    this.#zVertices[i][j] = newZ;
+    this.#zVertices[i][j + 1] = newZ;
+    this.#zVertices[i + 1][j + 1] = newZ;
+    this.#zVertices[i + 1][j] = newZ;
+
+    const r = this.propagateZUp(i - 1, j - 1, i + 2, j + 2, newZ - 1);
+    this.drawTilemap(r);
   }
 
-  raiseAt(index: number): void {
-    this.#tileElevations[index]++;
+  decreaseZ(i: number, j: number) {
+    // Tile elevation is the highest Z value of the 4 corners
+    const corners = this.getZCorners(i, j);
+    const newZ = Math.max(...corners) - 1;
+
+    this.#zVertices[i][j] = newZ;
+    this.#zVertices[i][j + 1] = newZ;
+    this.#zVertices[i + 1][j + 1] = newZ;
+    this.#zVertices[i + 1][j] = newZ;
+
+    const r = this.propagateZDown(i - 1, j - 1, i + 2, j + 2, newZ + 1);
+    this.drawTilemap(r);
+  }
+
+  /**
+   * Propagate z value to neighbors, ensure z >= z - 1
+   */
+  propagateZUp(x1: number, y1: number, x2: number, y2: number, z: number): Rect {
+    const changed = this.propagateZ(x1, y1, x2, y2, z, (a, b) => a < b);
+    if (changed) {
+      return this.propagateZUp(x1 - 1, y1 - 1, x2 + 1, y2 + 1, z - 1);
+    }
+    return {
+      x1,
+      y1,
+      x2,
+      y2,
+    };
+  }
+
+  /**
+   * Propagate z value to neighbors, ensure z <= z - 1
+   */
+  propagateZDown(x1: number, y1: number, x2: number, y2: number, z: number): Rect {
+    const changed = this.propagateZ(x1, y1, x2, y2, z, (a, b) => a > b);
+    if (changed) {
+      return this.propagateZDown(x1 - 1, y1 - 1, x2 + 1, y2 + 1, z + 1);
+    }
+    return {
+      x1,
+      y1,
+      x2,
+      y2,
+    };
+  }
+
+  propagateZ(
+    i1: number,
+    j1: number,
+    i2: number,
+    j2: number,
+    z: number,
+    cmpFn: (a: number, b: number) => boolean,
+  ): boolean {
+    let changed = false;
+    for (let i = i1; i <= i2; ++i) {
+      for (let j = j1; j <= j2; ++j) {
+        if (i >= 0 && i <= this.#cols && j >= 0 && j <= this.#rows) {
+          const currentZ = this.#zVertices[i][j];
+          if (cmpFn(currentZ, z)) {
+            this.#zVertices[i][j] = z;
+            changed = true;
+          }
+        }
+      }
+    }
+    return changed;
   }
 
   /**
    * Put a Road tile at given coords
    */
   setRoadAt(i: number, j: number): void {
-    this.setSmartTileAt(i, j, this.isRoad.bind(this), Tileset.RoadNeighbors);
-  }
-
-  setWaterAt(i: number, j: number): void {
-    this.setSmartTileAt(i, j, this.isWater.bind(this), Tileset.WaterNeighbors);
+    this.setSmartTileAt(i, j, this.isRoad.bind(this), this.tileset.roadNeighbors);
   }
 
   /**
@@ -428,36 +504,31 @@ export class Tilemap extends PIXI.Container {
    * Check if tile at coords is a road
    */
   isRoad(i: number, j: number): boolean {
-    const tileId = this.getTileAt(i, j);
-    return tileId !== null && Tileset.isRoad(tileId);
+    const tid = this.#tileIds[i][j];
+    return tid !== null && this.tileset.isRoad(tid);
   }
 
-  /**
-   * Check if tile at coords is water
-   */
-  isWater(i: number, j: number): boolean {
-    const tileId = this.getTileAt(i, j);
-    // Water is supposed to continue over map limits: null is considered as water
-    return tileId == null || Tileset.isWater(tileId);
+  canBuildRoad(i: number, j: number): boolean {
+    const tid = this.#tileIds[i][j];
+    return this.tileset.isConstructible(tid)
+      && this.tileset.canBuildRoadOnSlope(...this.getZCorners(i, j));
   }
 
   /**
    * Look for basic tiles and replace them with specific tiles of same kind (texture
    * transition, etc.)
-   * @param si, sj: top-left of search&replace area
-   * @param ei, ej: bottom-right of search&replace area
+   * @param i0, j0: top-left of search&replace area
+   * @param i1, j1: bottom-right of search&replace area
    */
-  putSpecialTiles(si = 0, sj = 0, ei = this.#cols - 1, ej = this.#rows - 1): void {
-    si = Math.max(0, si);
-    sj = Math.max(0, sj);
-    ei = Math.min(ei, this.#cols - 1);
-    ej = Math.min(ej, this.#rows - 1);
-    for (let j = sj; j <= ej; ++j) {
-      for (let i = si; i <= ei; ++i) {
-        const tileId = this.#tileIds[this.coordsToIndex(i, j)];
-        if (Tileset.isWater(tileId)) {
-          this.setWaterAt(i, j);
-        } else if (Tileset.isRoad(tileId)) {
+  putSpecialTiles(i0 = 0, j0 = 0, i1 = this.#cols - 1, j1 = this.#rows - 1): void {
+    i0 = Math.max(0, i0);
+    j0 = Math.max(0, j0);
+    i1 = Math.min(i1, this.#cols - 1);
+    j1 = Math.min(j1, this.#rows - 1);
+    for (let j = j0; j <= j1; ++j) {
+      for (let i = i0; i <= i1; ++i) {
+        const tileId = this.#tileIds[i][j];
+        if (this.tileset.isRoad(tileId)) {
           this.setRoadAt(i, j);
         }
       }

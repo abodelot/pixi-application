@@ -35,7 +35,8 @@ export class MiniMap extends PIXI.Container {
 
     // Update the minimap texture when the tilemap is updated
     EventBus.on('tilemap_updated', (event: TilemapUpdatedEvent) => {
-      this.writeTile(event.index, event.tileId);
+      console.log('tilemap_updated', event);
+      this.writePixel(event.i, event.j, event.tid);
       this.#texture.update();
     });
 
@@ -80,8 +81,10 @@ export class MiniMap extends PIXI.Container {
     this.#colors = new Uint8Array(4 * size);
 
     // Fill pixel array from tileIds (both are 1D array)
-    for (let i = 0; i < size; ++i) {
-      this.writeTile(i, tileIds[i]);
+    for (let i = 0; i < nbCols; ++i) {
+      for (let j = 0; j < nbRows; ++j) {
+        this.writePixel(i, j, tileIds[i][j]);
+      }
     }
 
     // Create a texture from pixels
@@ -111,9 +114,10 @@ export class MiniMap extends PIXI.Container {
 
   rebuildMiniMap(): void {
     const { tileIds, nbCols, nbRows } = Context.tilemap;
-    const size = nbCols * nbRows;
-    for (let i = 0; i < size; ++i) {
-      this.writeTile(i, tileIds[i]);
+    for (let i = 0; i < nbCols; ++i) {
+      for (let j = 0; j < nbRows; ++j) {
+        this.writePixel(i, j, tileIds[i][j]);
+      }
     }
     this.#texture.update();
   }
@@ -129,12 +133,15 @@ export class MiniMap extends PIXI.Container {
   }
 
   /**
-   * @param index: tile index in the tilemap (as 1D array)
+   * Write a pixel in the minimap
    */
-  writeTile(index: number, tileId: number): void {
-    index *= 4;
-    // Map tileId to a color
-    const color = Context.tilemap.tileset.getTileColor(tileId);
+  writePixel(i: number, j: number, tid: number): void {
+    // Convert 2D pos to index (* 4 bytes)
+    const index = (j * Context.tilemap.nbCols + i) * 4;
+
+    // Map tile ID to a color
+    const color = Context.tilemap.tileset.getTileColor(tid);
+
     // Write pixel
     this.#colors[index] = color.r;
     this.#colors[index + 1] = color.g;

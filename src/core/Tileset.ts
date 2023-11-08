@@ -4,54 +4,100 @@ import { Color } from './Types';
 
 export const MAX_ELEVATION = 15;
 
+export enum TileType {
+  Grass = 0,
+  Dirt = 16,
+  Road = 80,
+}
+
 export class Tileset {
-  // Key: 4 booleans, encoded as 0|1 string. Each bool value indicates if the tile
+  static TypeColors: Record<number, number> = {
+    [TileType.Grass]: 0x5db262,
+    [TileType.Dirt]: 0xcd683d,
+    [TileType.Road]: 0x4e4e4e,
+  };
+
+  static Slopes: Record<string, [number, number]> = {
+  // ↑→↓← (clockwise), value = [tileId, roadId]
+    '0110': [0, 64], 
+    '0010': [1, -1], 
+    '0011': [2, 66], 
+    '0100': [3, -1], 
+    '0000': [4, 68], 
+    '0001': [5, -1], 
+    '1100': [6, 70], 
+    '1000': [7, -1], 
+    '1001': [8, 72], 
+    '1011': [9, -1], 
+    '1101': [10, -1],
+    '1110': [11, -1],
+    '0111': [12, -1],
+    '0101': [13, -1],
+    '1010': [14, -1],
+  };
+
+  static TILE_GRASS = 0 + Tileset.Slopes['0000'][0];
+  static TILE_DIRT = 16 + Tileset.Slopes['0000'][0];
+
+  static Cursor: Record<string, number> = {
+    '0110': 32,
+    '0010': 33,
+    '0011': 34,
+    '0100': 35,
+    '0000': 36,
+    '0001': 37,
+    '1100': 38,
+    '1000': 39,
+    '1001': 40,
+    '1011': 41,
+    '1101': 42,
+    '1110': 43,
+    '0111': 44,
+    '0101': 45,
+    '1010': 46,
+  };
+
+  // 4 booleans, encoded as 0|1 string. Each bool value indicates if the tile
   // connects to another road tile, for each direction: Up, Down, Left, Right
-  // Value: The road tile ID
+  // Array order is tile order in the tileset
+  static Roads = [
+    // ↑→↓← (clockwise)
+    '0101',
+    '1010',
+    '0000',
+    '1111',
+    '0110',
+    '1001',
+    '0011',
+    '1100',
+    '0111',
+    '1110',
+    '1101',
+    '1011',
+    '0001',
+    '1000',
+    '0100',
+    '0010',
+  ];
 
-  static RoadNeighbors = {
-  // ↑→↓← (clockwise)
-    '0101': 64,
-    '1010': 65,
-    '0000': 66,
-    '1111': 67,
-    '0110': 68,
-    '1001': 69,
-    '0011': 70,
-    '1100': 71,
-    '0111': 72,
-    '1110': 73,
-    '1101': 74,
-    '1011': 75,
-    '0001': 76,
-    '1000': 77,
-    '0100': 78,
-    '0010': 79,
-  };
-
-  static WaterNeighbors = {
-    '1111': 48,
-    '0000': 49,
-    '0101': 50,
-    '1010': 51,
-    '1110': 52,
-    '0111': 53,
-    '1101': 54,
-    '1011': 55,
-    '1100': 56,
-    '0011': 57,
-    '0110': 58,
-    '1001': 59,
-    '0100': 60,
-    '0010': 61,
-    '1000': 62,
-    '0001': 63,
-  };
-
-  static GrassBase = 0;
-  static DirtBase = 16;
-  static SandBase = 32;
-  static WaterBase = 48;
+  // Describe the shade of each tile in a tileset row [0-15]
+  static SlopesShades = [
+    'dark',
+    'dark',
+    'light',
+    'dark',
+    'base',
+    'light',
+    'dark',
+    'light',
+    'light',
+    'light',
+    'light',
+    'dark',
+    'dark',
+    'base',
+    'base',
+  ];
 
   readonly texture: PIXI.Texture;
   readonly tileWidth: number;
@@ -63,6 +109,8 @@ export class Tileset {
   // Use an internal canvas for extracting pixel values
   readonly #canvasElem: HTMLCanvasElement;
   readonly #canvasCtx;
+
+  roadNeighbors: Record<string, number> = {};
 
   constructor(texture: PIXI.Texture, tileWidth: number, tileHeight: number, tileThickness: number) {
     this.texture = texture;
@@ -81,24 +129,10 @@ export class Tileset {
     this.#canvasCtx = this.#canvasElem.getContext('2d');
     const img = (this.texture.baseTexture as PIXI.BaseTexture<PIXI.ImageResource>).resource.source;
     this.#canvasCtx.drawImage(img, 0, 0);
-  }
 
-  /**
-   * @return tileId
-   */
-  static getElevatedTileId(tileId: number, elevation: number): number {
-    // Switch to another tile ID, representing the same base with elevation
-    if (tileId <= (Tileset.GrassBase + MAX_ELEVATION)) {
-      return Tileset.GrassBase + elevation;
+    for (let i = 0; i < Tileset.Roads.length; ++i) {
+      this.roadNeighbors[Tileset.Roads[i]] = TileType.Road + i;
     }
-    if (tileId <= (Tileset.DirtBase + MAX_ELEVATION)) {
-      return Tileset.DirtBase + elevation;
-    }
-    if (tileId <= (Tileset.SandBase + MAX_ELEVATION)) {
-      return Tileset.SandBase + elevation;
-    }
-    // Otherwise, tileId has no elevated version in the tileset
-    return tileId;
   }
 
   /**
@@ -114,6 +148,46 @@ export class Tileset {
     const texture = new PIXI.Texture(this.texture.baseTexture, this.getTileRect(tileId));
     this.#textureCache[tileId] = texture;
     return texture;
+  }
+
+  /**
+   * Get texture of a Road tile, to use it as an icon
+   */
+  getRoadIconTexture(): PIXI.Texture {
+    const roadId = this.roadNeighbors['0000'];
+    return this.getTileTexture(roadId);
+  }
+
+  /**
+   * Compute sloped tile id
+   * @return offset to be added to the base tile id
+   */
+  getTileSlopeOffset(top: number, right: number, bottom: number, left: number): number {
+    const key = this.getKey(top, right, bottom, left);
+    return Tileset.Slopes[key][0];
+  }
+
+  getSlopedRoadTileId(top: number, right: number, bottom: number, left: number): number {
+    const key = this.getKey(top, right, bottom, left);
+    if (key === '0000') {
+      return -1;
+    }
+    return Tileset.Slopes[key][1];
+  }
+
+  canBuildRoadOnSlope(top: number, right: number, bottom: number, left: number): boolean {
+    const key = this.getKey(top, right, bottom, left);
+    return Tileset.Slopes[key][1] !== -1;
+  }
+
+  getCursorTexture(top: number, right: number, bottom: number, left: number): PIXI.Texture {
+    const key = this.getKey(top, right, bottom, left);
+    return this.getTileTexture(Tileset.Cursor[key]);
+  }
+
+  private getKey(top: number, right: number, bottom: number, left: number): string {
+    const min = Math.min(top, right, bottom, left);
+    return [top, right, bottom, left].map((z) => (z === min ? 0 : 1)).join('');
   }
 
   /**
@@ -144,40 +218,41 @@ export class Tileset {
   }
 
   /**
-   * Get color of given tile, by reading 1 pixel
+   * Get color of given tile id
    * @return { r, g, b }
    */
   getTileColor(tileId: number): Color {
-    const rect = this.getTileRect(tileId);
-    // Extract 1 pixel at the center of the tile
-    const x = rect.x + this.tileWidth / 2;
-    const y = rect.y + this.tileHeight / 2;
-    const pixel = this.#canvasCtx.getImageData(x, y, 1, 1);
-    return {
-      r: pixel.data[0],
-      g: pixel.data[1],
-      b: pixel.data[2],
-    };
+    const baseId = Math.floor(tileId / 16) * 16;
+    const slopeOffset = tileId - baseId;
+    console.log("getTileColor", tileId, baseId, slopeOffset);
+
+    if (Tileset.TypeColors.hasOwnProperty(baseId)) {
+      const color = Color.fromInt(Tileset.TypeColors[baseId]);
+      switch (Tileset.SlopesShades[slopeOffset]) {
+        case 'base': return color;
+        case 'light': return color.lighten(0.2);
+        case 'dark': return color.darken(0.2);
+        default: return new Color(255, 0, 0);
+      }
+    }
+    return new Color(255, 0, 0);
   }
 
-  static isRoad(tileId: number): boolean {
-    return Object.values(Tileset.RoadNeighbors).includes(tileId);
+  isRoad(tileId: number): boolean {
+    return Object.values(this.roadNeighbors).includes(tileId)
+      || Object.values(Tileset.Slopes).map((value) => value[1]).includes(tileId);
   }
 
-  static isWater(tileId: number): boolean {
-    return Object.values(Tileset.WaterNeighbors).includes(tileId);
+  tileDesc(tileId: number): string {
+    if (tileId >= TileType.Grass && tileId < TileType.Dirt) return 'grass';
+    if (tileId >= TileType.Dirt && tileId < TileType.Road) return 'dirt';
+
+    if (this.isRoad(tileId)) return 'road';
+    return 'empty';
   }
 
-  static tileDesc(tileId: number): string {
-    if (Tileset.isRoad(tileId)) return 'road';
-    if (Tileset.isWater(tileId)) return 'water';
-    if (tileId >= Tileset.GrassBase && tileId <= Tileset.GrassBase + MAX_ELEVATION) return 'grass';
-    if (tileId >= Tileset.DirtBase && tileId <= Tileset.DirtBase + MAX_ELEVATION) return 'dirt';
-    if (tileId >= Tileset.SandBase && tileId <= Tileset.SandBase + MAX_ELEVATION) return 'sand';
-    return '?';
-  }
-
-  static isConstructible(tileId: number): boolean {
-    return !Tileset.isRoad(tileId) && !Tileset.isWater(tileId);
+  isConstructible(tileId: number): boolean {
+    if (this.isRoad(tileId)) return false;
+    return true;
   }
 }

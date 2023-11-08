@@ -63,6 +63,7 @@ export class TilemapActionTilePainter extends TilemapActionBase {
    * @param end: end point (rectangle bottom-right)
    */
   applyTileId(start: Coords, end: Coords): void {
+    console.log('apply tileId', this.#tileId);
     for (let i = start.i; i <= end.i; ++i) {
       for (let j = start.j; j <= end.j; ++j) {
         this.tilemap.setTileAt(i, j, this.#tileId);

@@ -15,7 +15,7 @@ const images = [
   'cursor.png',
   'screenview-9box.png',
   'shadow-9box.png',
-  'tileset.png',
+  'tileset2.png',
   'tools.png',
   'win95.png',
 ];

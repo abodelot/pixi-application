@@ -3,7 +3,6 @@ import { sound } from '@pixi/sound';
 
 import { Coords } from './Types';
 import { Tilemap } from './Tilemap';
-import { Tileset } from './Tileset';
 import { TilemapActionBase } from './TilemapActionBase';
 
 /**
@@ -40,7 +39,7 @@ export class TilemapActionRoad extends TilemapActionBase {
     // Put road tiles on tilemap
     let roads = 0;
     this.getPath().forEach(({ i, j }) => {
-      if (Tileset.isConstructible(this.tilemap.getTileAt(i, j))) {
+      if (this.tilemap.canBuildRoad(i, j)) {
         this.tilemap.setRoadAt(i, j);
         roads++;
       }
@@ -83,7 +82,7 @@ export class TilemapActionRoad extends TilemapActionBase {
 
   drawPreviewTile(i: number, j: number): void {
     const texture = this.tilemap.getTileCursorTexture(i, j);
-    const color = Tileset.isConstructible(this.tilemap.getTileAt(i, j)) ? 0xffffff : 0xff0000;
+    const color = this.tilemap.canBuildRoad(i, j) ? 0xffffff : 0xff0000;
     const pos = this.tilemap.coordsToPixels(i, j);
     this.#graphics.beginTextureFill({
       texture,
